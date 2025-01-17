@@ -1,13 +1,5 @@
 # CHANGELOG
 
-## 1.0.2
-
--   IMPROVE: Change Settings by Settings Email
--   NEW: Add Settings with default validity days, show delivery date, checkout hook selection and a button to consolidate the user_if (in case of problem)
--   NEW: Add a second checkbxo to gift the product (instead of make a gift card)
--   NEW: Add expiration date of the gift cards on emails
--   NEW: Add French Translation
-
 ## 1.0.1
 
 -   [🐛 BUG: Fixed 'add card' form not showing the card in the Gift Cards table](https://github.com/robertdevore/gift-cards-for-woocommerce/commit/cb0ebdec847c12e37e23af7b6a1b766f811c79e2)
