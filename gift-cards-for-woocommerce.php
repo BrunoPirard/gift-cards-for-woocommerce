@@ -11,7 +11,7 @@
  * Plugin Name: Gift Cards for WooCommerce®
  * Description: Adds gift card functionality to your WooCommerce® store.
  * Plugin URI:  https://github.com/robertdevore/gift-cards-for-woocommerce/
- * Version:     1.0.1
+ * Version:     1.0.2
  * Author:      Robert DeVore
  * Author URI:  https://robertdevore.com/
  * License:     GPL-2.0+
@@ -39,7 +39,7 @@ use GiftCards\WooCommerce\Emails\WC_Gift_Card_Expiry_Reminder_Email;
 /**
  * Current plugin version.
  */
-define( 'GIFT_CARDS_FOR_WOOCOMMERCE_VERSION', '1.0.1' );
+define( 'GIFT_CARDS_FOR_WOOCOMMERCE_VERSION', '1.0.2' );
 
 /**
  * Displays an admin notice if WooCommerce is inactive.
@@ -79,6 +79,8 @@ register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
  */
 class WC_Gift_Cards {
 
+    const DEFAULT_VALIDITY_DAYS = 365;
+
     /**
      * Predefined gift card amounts for generating variations.
      *
@@ -106,7 +108,8 @@ class WC_Gift_Cards {
 
         add_action( 'woocommerce_cart_calculate_fees', [ $this, 'apply_gift_card_discount' ], 999 );
         add_action( 'woocommerce_checkout_update_order_meta', [ $this, 'save_gift_card_to_order' ] );
-        add_action( 'woocommerce_product_options_general_product_data', [ $this, 'add_gift_card_checkbox' ] );
+        add_action( 'woocommerce_product_options_advanced', [$this, 'add_gift_card_checkbox'] );
+
         add_action( 'woocommerce_process_product_meta', [ $this, 'save_gift_card_checkbox' ] );
         add_action( 'woocommerce_before_add_to_cart_button', [ $this, 'display_gift_card_fields_on_product' ] );
         add_action( 'woocommerce_process_product_meta_variable', [ $this, 'generate_gift_card_variations' ] );
@@ -134,7 +137,7 @@ class WC_Gift_Cards {
         add_action( 'woocommerce_account_gift-cards_endpoint', [ $this, 'my_account_gift_cards_content' ] );
 
         // Add WooCommerce specific hooks.
-        add_action( 'woocommerce_review_order_before_payment', [ $this, 'display_gift_card_checkbox' ] );
+        //add_action( 'woocommerce_review_order_before_payment', [ $this, 'display_gift_card_checkbox' ] );
         add_action( 'woocommerce_checkout_update_order_review', [ $this, 'update_gift_card_session' ], 20,  );
         add_action( 'woocommerce_checkout_create_order', [ $this, 'apply_gift_card_to_order' ], 20, 2 );
         add_action( 'woocommerce_order_status_completed', [ $this, 'reduce_gift_card_balance' ] );
@@ -161,6 +164,27 @@ class WC_Gift_Cards {
 
         // Handle user registration
         add_action( 'user_register', [ $this, 'associate_gift_cards_with_user' ] );
+
+        // Hook pour filtrer l'affichage des variations
+        add_filter('woocommerce_variation_is_visible', [$this, 'maybe_hide_variations'], 10, 3);
+        // Récupérer le hook choisi dans les options
+        $display_hook = get_option('gift_card_display_hook', 'woocommerce_review_order_before_payment');
+        
+        // Ajouter le bloc sur le hook choisi
+        add_action($display_hook, [$this, 'display_gift_card_checkbox']);
+
+    }
+
+    /**
+     * Vérifie si Product Add-Ons Ultimate est actif
+     * 
+     * @since  1.0.2
+     * @return bool
+     */
+    private function is_product_addons_active() {
+        $active = class_exists('Product_Extras_For_WooCommerce') || class_exists('PEWC_Product_Extra');
+        error_log('Product Add-ons Active: ' . ($active ? 'Yes' : 'No'));
+        return $active;
     }
 
     /**
@@ -362,11 +386,52 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return array
      */
-    public function process_gift_card_purchase( $cart_item_data ) {
-        if ( isset( $_POST['gift_recipient'] ) && isset( $_POST['delivery_date'] ) ) {
-            $cart_item_data['gift_recipient'] = sanitize_email( $_POST['gift_recipient'] );
-            $cart_item_data['delivery_date']  = sanitize_text_field( $_POST['delivery_date'] );
+    public function process_gift_card_purchase($cart_item_data) {
+        // S'assurer que $cart_item_data est un tableau
+        if (!is_array($cart_item_data)) {
+            $cart_item_data = array();
         }
+
+        // Vérifier si nous sommes dans un contexte d'ajout au panier
+        if (!isset($_REQUEST['add-to-cart'])) {
+            return $cart_item_data;
+        }
+
+        $product_id = isset($_REQUEST['add-to-cart']) ? absint($_REQUEST['add-to-cart']) : 0;
+        if (!$product_id) {
+            return $cart_item_data;
+        }
+
+        $is_product_gift = get_post_meta($product_id, '_is_product_gift', true);
+        
+        // Pour les product gifts, vérifier si la checkbox est cochée
+        if ($is_product_gift === 'yes') {
+            if (!isset($_POST['is_gift'])) {
+                return $cart_item_data;
+            }
+        }
+
+        // Vérifier si les champs de carte cadeau sont présents
+        if (isset($_POST['gift_card_type'])) {
+            $cart_item_data['gift_card_type'] = sanitize_text_field($_POST['gift_card_type']);
+            $cart_item_data['gift_card_to'] = sanitize_email($_POST['gift_card_to']);
+            $cart_item_data['gift_card_from'] = sanitize_text_field($_POST['gift_card_from']);
+            $cart_item_data['gift_card_message'] = sanitize_textarea_field($_POST['gift_card_message']);
+            
+            // Définir la date de livraison avec une valeur par défaut
+            $display_delivery_date = get_option('gift_card_display_delivery_date', 'no');
+            $cart_item_data['gift_card_delivery_date'] = ($display_delivery_date === 'yes' && isset($_POST['gift_card_delivery_date'])) 
+                ? sanitize_text_field($_POST['gift_card_delivery_date'])
+                : date('Y-m-d', current_time('timestamp')); // Date du jour par défaut
+            
+            if ($is_product_gift === 'yes') {
+                $product = wc_get_product($product_id);
+                if ($product) {
+                    $cart_item_data['gift_card_amount'] = $product->get_price();
+                }
+            }
+        }
+        
         return $cart_item_data;
     }
 
@@ -391,6 +456,35 @@ class WC_Gift_Cards {
     }
 
     /**
+     * Determines whether to hide a product variation or not.
+     *
+     * For products marked as gifts, only the price variations should be visible.
+     * All other variations should be hidden.
+     *
+     * @param bool      $is_visible  Whether the variation should be visible.
+     * @param int       $variation_id  The ID of the variation.
+     * @param int       $product_id    The ID of the product.
+     *
+     * @return bool Whether the variation should be visible.
+     * @since  1.0.2
+     */
+    public function maybe_hide_variations($is_visible, $variation_id, $product_id) {
+        $is_product_gift = get_post_meta($product_id, '_is_product_gift', true);
+        
+        if ($is_product_gift === 'yes') {
+            // Récupérer la variation
+            $variation = wc_get_product($variation_id);
+            
+            // Vérifier si c'est une variation de montant de carte cadeau
+            if ($variation && $variation->get_attribute('gift_card_amount')) {
+                return false; // Cache uniquement les variations de montant
+            }
+        }
+        
+        return $is_visible; // Affiche les autres variations normalement
+    }
+
+    /**
      * Updates the balance of a gift card upon order completion.
      *
      * @param int $order_id The ID of the completed order.
@@ -398,44 +492,74 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function update_balance_on_completion( $order_id ) {
-        $order = wc_get_order( $order_id );
-
-        foreach ( $order->get_items() as $item_id => $item ) {
+    public function update_balance_on_completion($order_id) {
+        $order = wc_get_order($order_id);
+        
+        foreach ($order->get_items() as $item_id => $item) {
             $product = $item->get_product();
-            if ( 'yes' === get_post_meta( $product->get_id(), '_is_gift_card', true ) ) {
+            $product_id = $product->is_type('variation') ? $product->get_parent_id() : $product->get_id();
+            
+            $is_gift_card = get_post_meta($product_id, '_is_gift_card', true) === 'yes';
+            $is_product_gift = get_post_meta($product_id, '_is_product_gift', true) === 'yes';
+            
+            if ($is_gift_card || ($is_product_gift && $item->get_meta('is_gift'))) {
+                // Récupérer la validité en jours depuis les options
+                $validity_days = get_option('gift_card_validity_days', self::DEFAULT_VALIDITY_DAYS);
+                
+                // Récupérer la date de livraison
+                $delivery_date = $item->get_meta('gift_card_delivery_date');
+                if (empty($delivery_date)) {
+                    $delivery_date = date('Y-m-d'); // Date du jour si pas de date de livraison
+                }
+                
+                // Calculer la date d'expiration à partir de la date de livraison
+                $expiration_date = date('Y-m-d', strtotime($delivery_date . " +{$validity_days} days"));
+                
+                // Préparer les données de la carte cadeau
                 $gift_card_data = [
-                    'gift_card_type'  => $item->get_meta( 'gift_card_type' ),
-                    'recipient_email' => $item->get_meta( 'gift_card_to' ),
-                    'sender_name'     => $item->get_meta( 'gift_card_from' ),
-                    'message'         => $item->get_meta( 'gift_card_message' ),
-                    'delivery_date'   => $item->get_meta( 'gift_card_delivery_date' ),
-                    'balance'         => $item->get_total(),
+                    'gift_card_type' => $item->get_meta('gift_card_type'),
+                    'recipient_email' => $item->get_meta('gift_card_to'),
+                    'sender_name' => $item->get_meta('gift_card_from'),
+                    'message' => $item->get_meta('gift_card_message'),
+                    'delivery_date' => $delivery_date,
+                    'balance' => $item->get_meta('gift_card_amount') ?: $item->get_total(),
+                    'expiration_date' => $expiration_date
                 ];
 
-                // Generate unique code.
+                // Générer un code unique
                 $code = $this->generate_unique_code();
 
-                // Insert gift card into database.
+                // Insérer dans la base de données
                 global $wpdb;
                 $table_name = $wpdb->prefix . 'gift_cards';
 
                 $wpdb->insert(
                     $table_name,
                     [
-                        'code'            => $code,
-                        'balance'         => $gift_card_data['balance'],
-                        'expiration_date' => null,
-                        'sender_name'     => $gift_card_data['sender_name'],
-                        'sender_email'    => $order->get_billing_email(),
+                        'code' => $code,
+                        'balance' => $gift_card_data['balance'],
+                        'expiration_date' => $gift_card_data['expiration_date'],
+                        'sender_name' => $gift_card_data['sender_name'],
+                        'sender_email' => $order->get_billing_email(),
                         'recipient_email' => $gift_card_data['recipient_email'],
-                        'message'         => $gift_card_data['message'],
-                        'issued_date'     => current_time( 'mysql' ),
-                        'delivery_date'   => $gift_card_data['delivery_date'],
-                        'gift_card_type'  => $gift_card_data['gift_card_type'],
+                        'message' => $gift_card_data['message'],
+                        'issued_date' => current_time('mysql'),
+                        'delivery_date' => $gift_card_data['delivery_date'],
+                        'gift_card_type' => $gift_card_data['gift_card_type'],
                     ],
-                    [ '%s', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
+                    [
+                        '%s', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'
+                    ]
                 );
+
+
+                error_log(sprintf(
+                    'Gift Card Creation - Delivery: %s, Validity: %d days, Expiration: %s',
+                    $delivery_date,
+                    $validity_days,
+                    $expiration_date
+                ));
+
 
                 // Prepare gift card object for email.
                 $gift_card = (object) [
@@ -575,6 +699,9 @@ class WC_Gift_Cards {
                 <a href="?page=gift-cards-free&tab=add_card" class="nav-tab <?php echo ( $active_tab === 'add_card' ) ? 'nav-tab-active' : ''; ?>">
                     <?php esc_html_e( 'Add Card', 'gift-cards-for-woocommerce' ); ?>
                 </a>
+                <a href="?page=gift-cards-free&tab=settings_email" class="nav-tab <?php echo ( $active_tab === 'settings_email' ) ? 'nav-tab-active' : ''; ?>">
+                    <?php esc_html_e( 'Settings Email', 'gift-cards-for-woocommerce' ); ?>
+                </a>
                 <a href="?page=gift-cards-free&tab=settings" class="nav-tab <?php echo ( $active_tab === 'settings' ) ? 'nav-tab-active' : ''; ?>">
                     <?php esc_html_e( 'Settings', 'gift-cards-for-woocommerce' ); ?>
                 </a>
@@ -590,6 +717,9 @@ class WC_Gift_Cards {
                     break;
                 case 'add_card':
                     $this->display_add_card_form();
+                    break;
+                case 'settings_email':
+                    $this->display_settings_email_page();
                     break;
                 case 'settings':
                     $this->display_settings_page();
@@ -763,14 +893,15 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function display_settings_page() {
+    public function display_settings_email_page() {
+
         // Process form submission
         if ( isset( $_POST['save_gift_card_settings'] ) && check_admin_referer( 'save_gift_card_settings', 'gift_card_settings_nonce' ) ) {
             // Sanitize and save settings.
             $custom_email_image          = isset( $_POST['custom_email_image'] ) ? esc_url_raw( $_POST['custom_email_image'] ) : '';
             $custom_email_text           = isset( $_POST['custom_email_text'] ) ? wp_kses_post( $_POST['custom_email_text'] ) : '';
             $reminder_days_before_expiry = isset( $_POST['reminder_days_before_expiry'] ) ? absint( $_POST['reminder_days_before_expiry'] ) : 7;
-
+            
             update_option( 'gift_card_custom_email_image', $custom_email_image );
             update_option( 'gift_card_custom_email_text', $custom_email_text );
             update_option( 'gift_card_reminder_days_before_expiry', $reminder_days_before_expiry );
@@ -859,6 +990,142 @@ class WC_Gift_Cards {
             });
         });
         </script>
+        <?php
+    }
+
+    /**
+     * Displays the settings page for configuring gift card options.
+     *
+     * This function handles the submission and saving of gift card settings,
+     * including the default validity period. It outputs the settings form
+     * with options for adjusting the gift card validity period and other settings.
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    public function display_settings_page() {
+
+        $available_hooks = [
+            'woocommerce_review_order_before_payment' => __('Before Payment', 'gift-cards-for-woocommerce'),
+            'woocommerce_review_order_before_order_total' => __('Before Order Total', 'gift-cards-for-woocommerce'),
+            'woocommerce_review_order_after_order_total' => __('After Order Total', 'gift-cards-for-woocommerce'),
+            'woocommerce_checkout_before_customer_details' => __('Before Customer Details', 'gift-cards-for-woocommerce'),
+            'woocommerce_checkout_after_customer_details' => __('After Customer Details', 'gift-cards-for-woocommerce')
+        ];
+
+        $selected_hook = get_option('gift_card_display_hook', 'woocommerce_review_order_before_payment');
+
+        // Traiter la consolidation si demandée
+        if (isset($_POST['consolidate_gift_cards']) && check_admin_referer('consolidate_gift_cards', 'consolidate_nonce')) {
+            $results = $this->consolidate_gift_cards();
+            
+            if (empty($results['errors'])) {
+                echo '<div class="notice notice-success"><p>';
+                printf(
+                    esc_html__('Consolidation completed. Processed %d gift cards, updated %d user associations.', 'gift-cards-for-woocommerce'),
+                    $results['processed'],
+                    $results['updated']
+                );
+                echo '</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>';
+                esc_html_e('Errors occurred during consolidation:', 'gift-cards-for-woocommerce');
+                echo '<ul>';
+                foreach ($results['errors'] as $error) {
+                    echo '<li>' . esc_html($error) . '</li>';
+                }
+                echo '</ul></p></div>';
+            }
+        }
+
+        // Process form submission
+        if ( isset( $_POST['save_gift_card_settings'] ) && check_admin_referer( 'save_gift_card_settings', 'gift_card_settings_nonce' ) ) {
+            
+            // Save validity days
+            $validity_days = isset( $_POST['gift_card_validity_days'] ) ? absint( $_POST['gift_card_validity_days'] ) : self::DEFAULT_VALIDITY_DAYS;
+            update_option( 'gift_card_validity_days', $validity_days );
+
+            // Save display hook
+            $display_hook = isset($_POST['gift_card_display_hook']) ? sanitize_text_field($_POST['gift_card_display_hook']) : 'woocommerce_review_order_before_payment';
+            update_option('gift_card_display_hook', $display_hook);
+            
+            // Save display delivery date setting
+            $display_delivery_date = isset( $_POST['display_delivery_date'] ) ? 'yes' : 'no';
+            update_option( 'gift_card_display_delivery_date', $display_delivery_date );
+            
+            echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'gift-cards-for-woocommerce' ) . '</p></div>';
+        }
+
+        // Get existing settings
+        $validity_days = get_option( 'gift_card_validity_days', self::DEFAULT_VALIDITY_DAYS );
+        $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+        
+        ?>
+        <h2><?php esc_html_e( 'Gift Card Settings', 'gift-cards-for-woocommerce' ); ?></h2>
+         <!-- Ajouter le bouton de consolidation -->
+        <div class="consolidate-section" style="margin: 20px 0;">
+            <form method="post" action="">
+                <?php wp_nonce_field('consolidate_gift_cards', 'consolidate_nonce'); ?>
+                <input type="submit" name="consolidate_gift_cards" class="button button-secondary" 
+                    value="<?php esc_attr_e('Consolidate Gift Cards', 'gift-cards-for-woocommerce'); ?>">
+                <p class="description">
+                    <?php esc_html_e('This will scan all gift cards without user IDs and attempt to associate them with registered users based on recipient email addresses.', 'gift-cards-for-woocommerce'); ?>
+                </p>
+            </form>
+        </div>
+        <form method="post" action="">
+            <?php wp_nonce_field( 'save_gift_card_settings', 'gift_card_settings_nonce' ); ?>
+            
+            <table class="form-table">
+                <tr valign="top">
+                    <th scope="row">
+                        <label for="gift_card_validity_days"><?php esc_html_e( 'Default Validity Period (days)', 'gift-cards-for-woocommerce' ); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" name="gift_card_validity_days" id="gift_card_validity_days" 
+                            value="<?php echo esc_attr( $validity_days ); ?>" min="1" style="width:100px;" />
+                        <p class="description">
+                            <?php esc_html_e( 'Number of days gift cards are valid for by default.', 'gift-cards-for-woocommerce' ); ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">
+                        <label for="display_delivery_date"><?php esc_html_e( 'Display Delivery Date', 'gift-cards-for-woocommerce' ); ?></label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="display_delivery_date" id="display_delivery_date" 
+                            <?php checked( $display_delivery_date, 'yes' ); ?> />
+                        <p class="description">
+                            <?php esc_html_e( 'Enable this option to display the delivery date for gift cards.', 'gift-cards-for-woocommerce' ); ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top">
+                <th scope="row">
+                    <label for="gift_card_display_hook"><?php esc_html_e('Display Location', 'gift-cards-for-woocommerce'); ?></label>
+                </th>
+                <td>
+                    <select name="gift_card_display_hook" id="gift_card_display_hook">
+                        <?php foreach($available_hooks as $hook => $label) : ?>
+                            <option value="<?php echo esc_attr($hook); ?>" <?php selected($selected_hook, $hook); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description">
+                        <?php esc_html_e('Choose where to display the gift card field on checkout.', 'gift-cards-for-woocommerce'); ?>
+                    </p>
+                </td>
+            </tr>
+            </table>
+
+            <!-- Existing email settings... -->
+            <p class="submit">
+                <input type="submit" name="save_gift_card_settings" class="button button-primary" 
+                    value="<?php esc_attr_e( 'Save Settings', 'gift-cards-for-woocommerce' ); ?>">
+            </p>
+        </form>
         <?php
     }
 
@@ -1045,17 +1312,31 @@ class WC_Gift_Cards {
     }
 
     /**
-     * Adds a "Gift Card" checkbox to the product settings.
+     * Adds gift card related checkboxes to the WooCommerce product edit page.
      *
+     * This function adds two checkboxes to the product data section in the WooCommerce
+     * admin panel. The first checkbox allows users to designate a product as a gift card.
+     * The second checkbox allows the product to be sent as a gift card.
+     *
+     * @since 1.0.0
      * @return void
      */
     public function add_gift_card_checkbox() {
-        woocommerce_wp_checkbox( [
-            'id'          => '_is_gift_card',
-            'label'       => esc_html__( 'Gift Card', 'gift-cards-for-woocommerce' ),
-            'description' => esc_html__( 'Enable this option to make this product a gift card.', 'gift-cards-for-woocommerce' ),
-            'desc_tip'    => true,
-        ] );
+        global $post;
+        
+        woocommerce_wp_checkbox([
+            'id'            => '_is_gift_card',
+            'label'         => esc_html__('Gift Card', 'gift-cards-for-woocommerce'),
+            'description'   => esc_html__('Enable this option to make this product a gift card.', 'gift-cards-for-woocommerce'),
+            'wrapper_class' => 'show_if_simple show_if_variable',
+        ]);
+
+        woocommerce_wp_checkbox([
+            'id'            => '_is_product_gift',
+            'label'         => esc_html__('Product as Gift Card', 'gift-cards-for-woocommerce'),
+            'description'   => esc_html__('Enable this option to allow this product to be sent as a gift card.', 'gift-cards-for-woocommerce'),
+            'wrapper_class' => 'show_if_simple show_if_variable',
+        ]);
     }
 
     /**
@@ -1069,9 +1350,13 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function save_gift_card_checkbox( $post_id ) {
-        $is_gift_card = isset( $_POST['_is_gift_card'] ) ? 'yes' : 'no';
-        update_post_meta( $post_id, '_is_gift_card', $is_gift_card );
+    public function save_gift_card_checkbox($post_id) {
+        // Sauvegarder les options au niveau du produit principal
+        $is_gift_card = isset($_POST['_is_gift_card']) ? 'yes' : 'no';
+        $is_product_gift = isset($_POST['_is_product_gift']) ? 'yes' : 'no';
+        
+        update_post_meta($post_id, '_is_gift_card', $is_gift_card);
+        update_post_meta($post_id, '_is_product_gift', $is_product_gift);
     }
 
     /**
@@ -1082,57 +1367,101 @@ class WC_Gift_Cards {
      */
     public function display_gift_card_fields_on_product() {
         global $product;
-
+        
         // Not a gift card, so exit.
-        if ( 'yes' !== get_post_meta( $product->get_id(), '_is_gift_card', true ) ) {
+        if ('yes' !== get_post_meta($product->get_id(), '_is_gift_card', true)) {
             return;
         }
 
-        echo '<div class="gift-card-fields">';
+        $is_product_gift = get_post_meta($product->get_id(), '_is_product_gift', true);
 
-        // Gift Card Type
-        woocommerce_form_field( 'gift_card_type', [
+        // Si c'est un product gift, on ajoute d'abord la checkbox
+        if ($is_product_gift === 'yes') {
+            echo '<div class="gift-this-product">';
+            woocommerce_form_field('is_gift', [
+                'type'        => 'checkbox',
+                'class'       => ['gift-option-checkbox'],
+                'label'       => esc_html__('Gift this product', 'gift-cards-for-woocommerce'),
+                'description' => esc_html__('Check this box to send this product as a gift card', 'gift-cards-for-woocommerce'),
+            ]);
+            echo '</div>';
+        }
+
+        // Wrapper pour les champs de carte cadeau avec classe pour le contrôle de visibilité
+        echo '<div class="gift-card-fields' . ($is_product_gift === 'yes' ? ' initially-hidden' : '') . '">';
+        
+        // Si c'est un product gift, on ajoute un champ caché avec le prix du produit
+        if ($is_product_gift === 'yes') {
+            echo '<input type="hidden" name="product_price" value="' . esc_attr($product->get_price()) . '">';
+        }
+
+        // Afficher les champs communs
+        woocommerce_form_field('gift_card_type', [
             'type'     => 'select',
-            'label'    => esc_html__( 'Gift Card Type', 'gift-cards-for-woocommerce' ),
+            'label'    => esc_html__('Gift Card Type', 'gift-cards-for-woocommerce'),
             'required' => true,
             'options'  => [
-                'digital'  => esc_html__( 'Digital', 'gift-cards-for-woocommerce' ),
-                'physical' => esc_html__( 'Physical', 'gift-cards-for-woocommerce' ),
+                'digital'  => esc_html__('Digital', 'gift-cards-for-woocommerce'),
+                'physical' => esc_html__('Physical', 'gift-cards-for-woocommerce'),
             ],
-        ] );
+        ]);
 
-        // To (email).
-        woocommerce_form_field( 'gift_card_to', [
+        woocommerce_form_field('gift_card_to', [
             'type'     => 'email',
-            'label'    => esc_html__( 'To (Email)', 'gift-cards-for-woocommerce' ),
+            'label'    => esc_html__('To (Email)', 'gift-cards-for-woocommerce'),
             'required' => true,
-        ] );
+        ]);
 
-        // From (name).
-        woocommerce_form_field( 'gift_card_from', [
+        woocommerce_form_field('gift_card_from', [
             'type'     => 'text',
-            'label'    => esc_html__( 'From (Name)', 'gift-cards-for-woocommerce' ),
+            'label'    => esc_html__('From (Name)', 'gift-cards-for-woocommerce'),
             'required' => true,
-        ] );
+        ]);
 
-        // Message.
-        woocommerce_form_field( 'gift_card_message', [
+        woocommerce_form_field('gift_card_message', [
             'type'  => 'textarea',
-            'label' => esc_html__( 'Message', 'gift-cards-for-woocommerce' ),
-        ] );
+            'label' => esc_html__('Message', 'gift-cards-for-woocommerce'),
+        ]);
 
-        // Delivery Date.
-        woocommerce_form_field( 'gift_card_delivery_date', [
-            'type'              => 'date',
-            'label'             => esc_html__( 'Delivery Date', 'gift-cards-for-woocommerce' ),
-            'default'           => date( 'Y-m-d', current_time( 'timestamp' ) ),
-            'required'          => true,
-            'custom_attributes' => [
-                'min' => date( 'Y-m-d', current_time( 'timestamp' ) ),
-            ],
-        ] );
-
+        $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+        if ( $display_delivery_date === 'yes' ) {
+            woocommerce_form_field('gift_card_delivery_date', [
+                'type'              => 'date',
+                'label'             => esc_html__('Delivery Date', 'gift-cards-for-woocommerce'),
+                'default'           => date('Y-m-d', current_time('timestamp')),
+                'required'          => true,
+                'custom_attributes' => [
+                    'min' => date('Y-m-d', current_time('timestamp')),
+                ],
+            ]);
+        }
         echo '</div>';
+
+        // Ajouter le JavaScript pour gérer la visibilité
+        if ($is_product_gift === 'yes') {
+            ?>
+            <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var $giftFields = $('.gift-card-fields');
+                var $checkbox = $('input[name="is_gift"]');
+                
+                // Cacher initialement les champs
+                $giftFields.hide();
+                
+                // Gérer la visibilité lors du changement de la checkbox
+                $checkbox.change(function() {
+                    if ($(this).is(':checked')) {
+                        $giftFields.slideDown();
+                        $giftFields.find(':input').prop('required', true);
+                    } else {
+                        $giftFields.slideUp();
+                        $giftFields.find(':input').prop('required', false);
+                    }
+                });
+            });
+            </script>
+            <?php
+        }
     }
 
     /**
@@ -1144,14 +1473,65 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return array
      */
-    public function add_gift_card_data_to_cart( $cart_item_data, $product_id ) {
-        if ( isset( $_POST['gift_card_type'] ) ) {
-            $cart_item_data['gift_card_type']          = sanitize_text_field( $_POST['gift_card_type'] );
-            $cart_item_data['gift_card_to']            = sanitize_email( $_POST['gift_card_to'] );
-            $cart_item_data['gift_card_from']          = sanitize_text_field( $_POST['gift_card_from'] );
-            $cart_item_data['gift_card_message']       = sanitize_textarea_field( $_POST['gift_card_message'] );
-            $cart_item_data['gift_card_delivery_date'] = sanitize_text_field( $_POST['gift_card_delivery_date'] );
+    public function add_gift_card_data_to_cart($cart_item_data, $product_id) {
+        $is_product_gift = get_post_meta($product_id, '_is_product_gift', true);
+        $is_gift_card = get_post_meta($product_id, '_is_gift_card', true);
+        $display_delivery_date = get_option('gift_card_display_delivery_date', 'no');
+
+        // Cas 1: Produit normal avec option d'offrir (_is_product_gift)
+        if ($is_product_gift === 'yes') {
+            if (isset($_POST['is_gift']) && $_POST['is_gift'] === '1') {
+                $cart_item_data['is_gift'] = true;
+                $cart_item_data['gift_card_type'] = sanitize_text_field($_POST['gift_card_type']);
+                $cart_item_data['gift_card_to'] = sanitize_email($_POST['gift_card_to']);
+                $cart_item_data['gift_card_from'] = sanitize_text_field($_POST['gift_card_from']);
+                $cart_item_data['gift_card_message'] = sanitize_textarea_field($_POST['gift_card_message']);
+                $cart_item_data['gift_card_delivery_date'] = ($display_delivery_date === 'yes' && isset($_POST['gift_card_delivery_date'])) 
+                    ? sanitize_text_field($_POST['gift_card_delivery_date'])
+                    : date('Y-m-d');
+
+                // Récupérer le prix total
+                $product = wc_get_product($product_id);
+                $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
+                if ($variation_id) {
+                    $variation = wc_get_product($variation_id);
+                    $base_price = $variation ? $variation->get_price() : $product->get_price();
+                } else {
+                    $base_price = $product->get_price();
+                }
+
+                // Récupérer le prix total avec extras
+                if (isset($_POST['pewc_total_calc_price'])) {
+                    $total_price = floatval(str_replace(',', '.', $_POST['pewc_total_calc_price']));
+                    error_log('Total price from pewc_total_calc_price: ' . $total_price);
+                } else {
+                    $total_price = $base_price;
+                }
+
+                $cart_item_data['gift_card_amount'] = $total_price;
+                $cart_item_data['base_price'] = $base_price;
+                
+                // Log détaillé
+                error_log(sprintf(
+                    'Gift Card Price Details - Base: %f, Total: %f, Variation ID: %d',
+                    $base_price,
+                    $total_price,
+                    $variation_id
+                ));
+            }
         }
+        
+        // Cas 2: Produit de type carte cadeau (_is_gift_card)
+            elseif ($is_gift_card === 'yes' && isset($_POST['gift_card_type'])) {
+                $cart_item_data['gift_card_type'] = sanitize_text_field($_POST['gift_card_type']);
+                $cart_item_data['gift_card_to'] = sanitize_email($_POST['gift_card_to']);
+                $cart_item_data['gift_card_from'] = sanitize_text_field($_POST['gift_card_from']);
+                $cart_item_data['gift_card_message'] = sanitize_textarea_field($_POST['gift_card_message']);
+                $cart_item_data['gift_card_delivery_date'] = ($display_delivery_date === 'yes' && isset($_POST['gift_card_delivery_date'])) 
+                    ? sanitize_text_field($_POST['gift_card_delivery_date'])
+                    : date('Y-m-d');
+            }
+
         return $cart_item_data;
     }
 
@@ -1182,10 +1562,13 @@ class WC_Gift_Cards {
                 'name'  => esc_html__( 'Message', 'gift-cards-for-woocommerce' ),
                 'value' => sanitize_textarea_field( $cart_item['gift_card_message'] ),
             ];
-            $item_data[] = [
-                'name'  => esc_html__( 'Delivery Date', 'gift-cards-for-woocommerce' ),
-                'value' => sanitize_text_field( $cart_item['gift_card_delivery_date'] ),
-            ];
+            $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+            if ( $display_delivery_date === 'yes' ) {
+                $item_data[] = [
+                    'name'  => esc_html__( 'Delivery Date', 'gift-cards-for-woocommerce' ),
+                    'value' => sanitize_text_field( $cart_item['gift_card_delivery_date'] ),
+                ];
+            }
         }
         return $item_data;
     }
@@ -1201,13 +1584,61 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function add_gift_card_data_to_order_items( $item, $cart_item_key, $values, $order ) {
-        if ( isset( $values['gift_card_type'] ) ) {
-            $item->add_meta_data( 'gift_card_type', sanitize_text_field( $values['gift_card_type'] ), true );
-            $item->add_meta_data( 'gift_card_to', sanitize_text_field( $values['gift_card_to'] ), true );
-            $item->add_meta_data( 'gift_card_from', sanitize_text_field( $values['gift_card_from'] ), true );
-            $item->add_meta_data( 'gift_card_message', sanitize_textarea_field( $values['gift_card_message'] ), true );
-            $item->add_meta_data( 'gift_card_delivery_date', sanitize_text_field( $values['gift_card_delivery_date'] ), true );
+    public function add_gift_card_data_to_order_items($item, $cart_item_key, $values, $order) {
+        if (isset($values['gift_card_type'])) {
+            try {
+                error_log('Gift card values: ' . print_r($values, true));
+                // 1. Sauvegarder les données brutes pour le traitement interne
+                $item->update_meta_data('gift_card_type', sanitize_text_field($values['gift_card_type']));
+                $item->update_meta_data('gift_card_to', sanitize_text_field($values['gift_card_to']));
+                $item->update_meta_data('gift_card_from', sanitize_text_field($values['gift_card_from']));
+                $item->update_meta_data('gift_card_message', sanitize_textarea_field($values['gift_card_message']));
+                $item->update_meta_data('gift_card_delivery_date', sanitize_text_field($values['gift_card_delivery_date']));
+                
+                if (isset($values['gift_card_amount'])) {
+                    $amount = floatval($values['gift_card_amount']);
+                    error_log('Saving gift card amount: ' . $amount);
+                    $item->update_meta_data('gift_card_amount', $amount);
+                }
+
+                // 2. Ajouter un filtre pour personnaliser l'affichage des métadonnées
+                add_filter('woocommerce_order_item_get_formatted_meta_data', function($formatted_meta, $item) {
+                    foreach ($formatted_meta as $key => $meta) {
+                        switch ($meta->key) {
+                            case 'gift_card_type':
+                                $formatted_meta[$key]->display_key = __('Type', 'gift-cards-for-woocommerce');
+                                $formatted_meta[$key]->display_value = $meta->value === 'digital' 
+                                    ? __('Digital', 'gift-cards-for-woocommerce')
+                                    : __('Physical', 'gift-cards-for-woocommerce');
+                                break;
+                            case 'gift_card_to':
+                                $formatted_meta[$key]->display_key = __('To', 'gift-cards-for-woocommerce');
+                                break;
+                            case 'gift_card_from':
+                                $formatted_meta[$key]->display_key = __('From', 'gift-cards-for-woocommerce');
+                                break;
+                            case 'gift_card_message':
+                                $formatted_meta[$key]->display_key = __('Message', 'gift-cards-for-woocommerce');
+                                break;
+                            case 'gift_card_delivery_date':
+                                $formatted_meta[$key]->display_key = __('Delivery Date', 'gift-cards-for-woocommerce');
+                                $formatted_meta[$key]->display_value = wp_date(
+                                    get_option('date_format'),
+                                    strtotime($meta->value)
+                                );
+                                break;
+                            case 'gift_card_amount':
+                                $formatted_meta[$key]->display_key = __('Amount', 'gift-cards-for-woocommerce');
+                                $formatted_meta[$key]->display_value = wc_price($meta->value);
+                                break;
+                        }
+                    }
+                    return $formatted_meta;
+                }, 10, 2);
+
+            } catch (Exception $e) {
+                error_log('Error in add_gift_card_data_to_order_items: ' . $e->getMessage());
+            }
         }
     }
 
@@ -1319,13 +1750,18 @@ class WC_Gift_Cards {
      *
      * @param int $post_id The ID of the product post.
      * 
-     * @since  1.0.0
+     * @since  1.0.2
      * @return void
      */
     public function generate_gift_card_variations( $post_id ) {
-        // Check if the product is marked as a gift card.
-        if ( isset( $_POST['_is_gift_card'] ) && $_POST['_is_gift_card'] === 'yes' ) {
-            $product = wc_get_product( $post_id );
+        // Check if the product is marked as a gift card
+        if (isset($_POST['_is_gift_card']) && $_POST['_is_gift_card'] === 'yes') {
+            // Skip variation generation if product is marked as product gift
+            if (isset($_POST['_is_product_gift']) && $_POST['_is_product_gift'] === 'yes') {
+                return;
+            }
+
+            $product = wc_get_product($post_id);
 
             // Only proceed if the product is variable.
             if ( $product->is_type( 'variable' ) ) {
@@ -1334,7 +1770,7 @@ class WC_Gift_Cards {
                 if ( ! isset( $attributes['gift_card_amount'] ) ) {
                     $attributes['gift_card_amount'] = new WC_Product_Attribute();
                     $attributes['gift_card_amount']->set_id( 0 );
-                    $attributes['gift_card_amount']->set_name( 'Gift Card Amount' );
+                    $attributes['gift_card_amount']->set_name( __('Gift Card Amount', 'gift-cards-for-woocommerce') );
                     $attributes['gift_card_amount']->set_options( array_map( 'strval', $this->gift_card_amounts ) );
                     $attributes['gift_card_amount']->set_position( 0 );
                     $attributes['gift_card_amount']->set_visible( true );
@@ -1966,42 +2402,62 @@ class WC_Gift_Cards {
      *
      * @param int $user_id The ID of the newly registered user.
      *
-     * @since  1.0.1
+     * @since  1.0.0
      * @return void
      */
     public function associate_gift_cards_with_user( $user_id ) {
         global $wpdb;
-
-        // Get the user's email
-        $user = get_userdata( $user_id );
-        if ( ! $user || ! $user->user_email ) {
-            return;
-        }
-
-        $table_name = $wpdb->prefix . 'gift_cards';
-
-        // Find gift cards issued to this email
-        $gift_cards = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE recipient_email = %s AND user_id IS NULL",
-                $user->user_email
-            )
-        );
-
-        if ( ! empty( $gift_cards ) ) {
-            foreach ( $gift_cards as $gift_card ) {
-                // Update the user_id for each gift card
-                $wpdb->update(
-                    $table_name,
-                    array( 'user_id' => $user_id ),
-                    array( 'id' => $gift_card->id ),
-                    array( '%d' ),
-                    array( '%d' )
-                );
-
-                // Log the association
-                $this->log_activity( 'associated_with_user', $gift_card->code, null, $user_id );
+        
+        try {
+            if(!is_numeric($user_id)) {
+                throw new Exception('User ID invalide');
             }
+
+            $user = get_userdata( $user_id );
+            if ( ! $user || ! $user->user_email ) {
+                throw new Exception('Utilisateur non trouvé ou email manquant');
+            }
+
+            $table_name = $wpdb->prefix . 'gift_cards';
+            
+            if($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                throw new Exception('Table gift_cards non trouvée');
+            }
+
+            $gift_cards = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$table_name} WHERE recipient_email = %s AND user_id IS NULL",
+                    $user->user_email
+                )
+            );
+
+            if($wpdb->last_error) {
+                throw new Exception('Erreur SQL: ' . $wpdb->last_error);
+            }
+
+            if ( ! empty( $gift_cards ) ) {
+                foreach ( $gift_cards as $gift_card ) {
+                    $update_result = $wpdb->update(
+                        $table_name,
+                        array( 'user_id' => $user_id ),
+                        array( 'id' => $gift_card->id ),
+                        array( '%d' ),
+                        array( '%d' )
+                    );
+
+                    if($update_result === false) {
+                        throw new Exception('Erreur lors de la mise à jour de la carte cadeau ID: ' . $gift_card->id);
+                    }
+
+                    $this->log_activity( 'associated_with_user', $gift_card->code, null, $user_id );
+                }
+            }
+            
+            return true;
+
+        } catch (Exception $e) {
+            error_log('Erreur dans associate_gift_cards_with_user: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -2259,6 +2715,67 @@ class WC_Gift_Cards {
 
         // Additionally, delete the total count transient if it exists.
         delete_transient( 'gift_cards_total_count' );
+    }
+
+    /**
+     * Consolide les cartes cadeaux en associant les user_id manquants
+     * 
+     * @return array Résultats de la consolidation
+     */
+    private function consolidate_gift_cards() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'gift_cards';
+        $results = [
+            'processed' => 0,
+            'updated' => 0,
+            'errors' => []
+        ];
+
+        try {
+            // Récupérer toutes les cartes cadeaux sans user_id
+            $gift_cards = $wpdb->get_results(
+                "SELECT * FROM {$table_name} WHERE user_id IS NULL AND recipient_email IS NOT NULL"
+            );
+
+            if ($wpdb->last_error) {
+                throw new Exception('Database error: ' . $wpdb->last_error);
+            }
+
+            $results['processed'] = count($gift_cards);
+
+            foreach ($gift_cards as $gift_card) {
+                // Chercher un utilisateur avec cet email
+                $user = get_user_by('email', $gift_card->recipient_email);
+                
+                if ($user) {
+                    $update_result = $wpdb->update(
+                        $table_name,
+                        ['user_id' => $user->ID],
+                        ['id' => $gift_card->id],
+                        ['%d'],
+                        ['%d']
+                    );
+
+                    if ($update_result === false) {
+                        $results['errors'][] = sprintf(
+                            'Failed to update gift card ID %d for user %s',
+                            $gift_card->id,
+                            $gift_card->recipient_email
+                        );
+                    } else {
+                        $results['updated']++;
+                        // Log l'association
+                        $this->log_activity('associated_with_user', $gift_card->code, null, $user->ID);
+                    }
+                }
+            }
+
+            return $results;
+
+        } catch (Exception $e) {
+            $results['errors'][] = $e->getMessage();
+            return $results;
+        }
     }
 
 }

@@ -25,4 +25,14 @@ if ( ! empty( $custom_email_image ) ) {
 <p><?php printf( __( 'Redeem your gift card with code: <strong>%s</strong>', 'gift-cards-for-woocommerce' ), esc_html( $gift_card->code ) ); ?></p>
 
 <?php
+// Add expiry date
+$validity_days = get_option('gift_card_validity_days', 365);
+$expiry_date = date_i18n(
+    get_option('date_format'), 
+    strtotime("+{$validity_days} days")
+);
+?>
+<p><?php printf( __( 'This gift card will expire on: <strong>%s</strong>', 'gift-cards-for-woocommerce' ), esc_html( $expiry_date ) ); ?></p>
+
+<?php
 do_action( 'woocommerce_email_footer', $email );
