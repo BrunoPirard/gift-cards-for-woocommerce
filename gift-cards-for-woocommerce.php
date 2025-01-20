@@ -88,6 +88,13 @@ class WC_Gift_Cards {
      */
     private $gift_card_amounts = [ 25, 50, 100 ];
 
+     /**
+     * Logger instance
+     *
+     * @var Gift_Cards_Logger
+     */
+    private $logger;
+
     /**
      * Constructor.
      *
@@ -96,6 +103,10 @@ class WC_Gift_Cards {
     public function __construct() {
         // Initialize the plugin and database.
         register_activation_hook( __FILE__, [ $this, 'create_gift_card_table' ] );
+
+        // Initialiser le logger
+        require_once plugin_dir_path(__FILE__) . 'classes/WC_Gift_Cards_Logger.php';
+        $this->logger = new Gift_Cards_Logger();
 
         // Register the uninstall hook to trigger the cleanup function.
         register_uninstall_hook( __FILE__, 'wc_gift_cards_on_uninstall' );
@@ -172,6 +183,9 @@ class WC_Gift_Cards {
         $display_hook = get_option('gift_card_display_hook', 'woocommerce_review_order_before_payment');  
         // Add the block to the chosen hook
         add_action($display_hook, [$this, 'display_gift_card_checkbox']);
+
+        // Gérer le changement de statut de la journalisation
+        add_action('admin_init', [$this, 'handle_logging_status_change']);
 
     }
 
@@ -660,6 +674,7 @@ class WC_Gift_Cards {
      */
     public function display_admin_page() {
         $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'gift_cards';
+        $enable_logging = get_option('gift_cards_enable_logging', true);
 
         // Check for import status and display messages.
         if ( isset( $_GET['import_success'] ) ) {
@@ -693,9 +708,13 @@ class WC_Gift_Cards {
                 <a href="?page=gift-cards-free&tab=gift_cards" class="nav-tab <?php echo ( $active_tab === 'gift_cards' ) ? 'nav-tab-active' : ''; ?>">
                     <?php esc_html_e( 'Gift Cards', 'gift-cards-for-woocommerce' ); ?>
                 </a>
+
+                <?php if ($this->logger->is_enabled()) : ?>
                 <a href="?page=gift-cards-free&tab=activity" class="nav-tab <?php echo ( $active_tab === 'activity' ) ? 'nav-tab-active' : ''; ?>">
                     <?php esc_html_e( 'Activity', 'gift-cards-for-woocommerce' ); ?>
                 </a>
+                 <?php endif; ?>
+
                 <a href="?page=gift-cards-free&tab=add_card" class="nav-tab <?php echo ( $active_tab === 'add_card' ) ? 'nav-tab-active' : ''; ?>">
                     <?php esc_html_e( 'Add Card', 'gift-cards-for-woocommerce' ); ?>
                 </a>
@@ -713,8 +732,13 @@ class WC_Gift_Cards {
                     $this->display_gift_cards_table();
                     break;
                 case 'activity':
+                if ($this->logger->is_enabled()) {
                     $this->display_activity_table();
-                    break;
+                } else {
+                    wp_redirect(admin_url('admin.php?page=gift-cards-free&tab=gift_cards'));
+                    exit;
+                }
+                break;
                 case 'add_card':
                     $this->display_add_card_form();
                     break;
@@ -1052,6 +1076,10 @@ class WC_Gift_Cards {
             // Save display delivery date setting
             $display_delivery_date = isset( $_POST['display_delivery_date'] ) ? 'yes' : 'no';
             update_option( 'gift_card_display_delivery_date', $display_delivery_date );
+
+            // Save display delivery date setting
+            $enable_logging = isset( $_POST['enable_logging'] ) ? 'yes' : 'no';
+            update_option( 'gift_cards_enable_logging', $enable_logging );
             
             echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'gift-cards-for-woocommerce' ) . '</p></div>';
         }
@@ -1059,6 +1087,7 @@ class WC_Gift_Cards {
         // Get existing settings
         $validity_days = get_option( 'gift_card_validity_days', self::DEFAULT_VALIDITY_DAYS );
         $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+        $enable_logging = get_option('gift_cards_enable_logging', true);
         
         ?>
         <h2><?php esc_html_e( 'Gift Card Settings', 'gift-cards-for-woocommerce' ); ?></h2>
@@ -1098,6 +1127,18 @@ class WC_Gift_Cards {
                             <?php checked( $display_delivery_date, 'yes' ); ?> />
                         <p class="description">
                             <?php esc_html_e( 'Enable this option to display the delivery date for gift cards.', 'gift-cards-for-woocommerce' ); ?>
+                        </p>
+                    </td>
+                </tr>
+                 <tr>
+                    <th scope="row">
+                        <label for="enable_logging"><?php esc_html_e('Enable Activity Logging', 'gift-cards-for-woocommerce'); ?></label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="enable_logging" id="enable_logging" 
+                            <?php checked($enable_logging, true); ?>>
+                        <p class="description">
+                            <?php esc_html_e('Log gift card activities for tracking and debugging purposes.', 'gift-cards-for-woocommerce'); ?>
                         </p>
                     </td>
                 </tr>
@@ -2568,130 +2609,6 @@ class WC_Gift_Cards {
     }
 
     /**
-     * Logs an activity related to a gift card.
-     *
-     * @param string $action_type The type of action (e.g., 'created', 'used').
-     * @param string $code        The gift card code.
-     * @param float  $amount      The amount associated with the action.
-     * @param int    $user_id     The user ID related to the action.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_activity( $action_type, $code, $amount = null, $user_id = null ) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'gift_card_activities';
-
-        $wpdb->insert(
-            $table_name,
-            [
-                'action_type' => $action_type,
-                'code'        => $code,
-                'amount'      => $amount,
-                'user_id'     => $user_id,
-                'action_date' => current_time('mysql'),
-            ],
-            [ '%s', '%s', '%f', '%d', '%s' ]
-        );
-    }
-
-    /**
-     * Logs the creation of a gift card.
-     *
-     * @param string $code        The code of the created gift card.
-     * @param float  $balance     The initial balance of the gift card.
-     * @param int    $user_id     The user ID associated with the card.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_creation( $code, $balance, $user_id = null ) {
-        $this->log_activity( 'created', $code, $balance, $user_id );
-    }
-
-    /**
-     * Logs the usage of a gift card.
-     *
-     * @param string $code        The code of the used gift card.
-     * @param float  $amount_used The amount used.
-     * @param int    $user_id     The user ID who used the gift card.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_usage( $code, $amount_used, $user_id = null ) {
-        $this->log_activity( 'used', $code, $amount_used, $user_id );
-    }
-
-    /**
-     * Logs a balance adjustment action for a gift card.
-     *
-     * @param string $code        The code of the adjusted gift card.
-     * @param float  $new_balance The new balance after adjustment.
-     * @param int    $user_id     The ID of the admin making the adjustment.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_balance_adjustment( $code, $new_balance, $user_id ) {
-        $this->log_activity( 'balance_adjusted', $code, $new_balance, $user_id );
-    }
-
-    /**
-     * Logs an update to the expiration date of a gift card.
-     *
-     * @param string $code            The code of the gift card with updated expiration.
-     * @param string $expiration_date The new expiration date.
-     * @param int    $user_id         The ID of the admin making the update.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_expiration_update( $code, $expiration_date, $user_id ) {
-        $this->log_activity( 'expiration_updated', $code, null, $user_id );
-    }
-
-    /**
-     * Logs the deletion of a gift card.
-     *
-     * @param string $code    The code of the deleted gift card.
-     * @param int    $user_id The ID of the admin who deleted the card.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_deletion( $code, $user_id ) {
-        $this->log_activity( 'deleted', $code, null, $user_id );
-    }
-
-    /**
-     * Logs when an expiration reminder email is sent.
-     *
-     * @param string $code    The code of the gift card.
-     * @param int    $user_id The ID of the recipient user.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_expiration_reminder_sent( $code, $user_id ) {
-        $this->log_activity( 'expiration_reminder_sent', $code, null, $user_id );
-    }
-
-    /**
-     * Logs a gift card import or export action.
-     *
-     * @param string $action_type Action type: 'import' or 'export'.
-     * @param int    $user_id     The admin ID who initiated the action.
-     * @param int    $count       The number of cards processed.
-     * 
-     * @since  1.0.0
-     * @return void
-     */
-    private function log_import_export( $action_type, $user_id, $count ) {
-        $this->log_activity( $action_type . '_csv', null, $count, $user_id );
-    }
-
-    /**
      * Clears all cached gift cards list table transients.
      *
      * @since  1.0.0
@@ -2718,9 +2635,32 @@ class WC_Gift_Cards {
     }
 
     /**
-     * Consolide les cartes cadeaux en associant les user_id manquants
+     * Handles the logging status change and redirects to the gift cards page
+     * if the user is currently viewing the activity page.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public function handle_logging_status_change() {
+        if (isset($_POST['enable_logging'])) {
+            $enable_logging = isset($_POST['enable_logging']) ? 'yes' : 'no';
+            update_option('gift_cards_enable_logging', $enable_logging);
+            
+            if ($enable_logging === 'no') {
+                $current_tab = isset($_GET['tab']) ? $_GET['tab'] : '';
+                if ($current_tab === 'activity') {
+                    wp_redirect(admin_url('admin.php?page=gift-cards-free&tab=gift_cards'));
+                    exit;
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Consolidate gift cards by associating missing user_ids
      * 
-     * @return array Résultats de la consolidation
+     * @return array Consolidation results
      */
     private function consolidate_gift_cards() {
         global $wpdb;
@@ -2732,7 +2672,7 @@ class WC_Gift_Cards {
         ];
 
         try {
-            // Récupérer toutes les cartes cadeaux sans user_id
+            // Retrieve all gift cards without user_id
             $gift_cards = $wpdb->get_results(
                 "SELECT * FROM {$table_name} WHERE user_id IS NULL AND recipient_email IS NOT NULL"
             );
@@ -2744,7 +2684,7 @@ class WC_Gift_Cards {
             $results['processed'] = count($gift_cards);
 
             foreach ($gift_cards as $gift_card) {
-                // Chercher un utilisateur avec cet email
+                // Search for a user with this email address
                 $user = get_user_by('email', $gift_card->recipient_email);
                 
                 if ($user) {
@@ -2764,7 +2704,7 @@ class WC_Gift_Cards {
                         );
                     } else {
                         $results['updated']++;
-                        // Log l'association
+                        // Log the association
                         $this->log_activity('associated_with_user', $gift_card->code, null, $user->ID);
                     }
                 }
