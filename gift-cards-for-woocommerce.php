@@ -32,9 +32,21 @@ if ( ! in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins',
     return;
 }
 
-use GiftCards\WooCommerce\ListTable\Gift_Cards_List_Table;
-use GiftCards\WooCommerce\Emails\WC_Gift_Card_Email;
-use GiftCards\WooCommerce\Emails\WC_Gift_Card_Expiry_Reminder_Email;
+require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+
+use GiftCards\WooCommerce\Emails\GiftCardEmail;
+use GiftCards\WooCommerce\Emails\GiftCardExpiryReminderEmail;
+use GiftCards\WooCommerce\ListTable\GiftCardsListTable;
+use GiftCards\WooCommerce\Logger\GiftCardsLogger;
+use GiftCards\WooCommerce\PDF\GiftCardPDFGenerator;
+
+if (class_exists('WC_Email')) {
+    class_alias('GiftCards\WooCommerce\Emails\GiftCardEmail', 'WC_Gift_Card_Email');
+    class_alias('GiftCards\WooCommerce\Emails\GiftCardExpiryReminderEmail', 'WC_Gift_Card_Expiry_Reminder_Email');
+}
+class_alias('GiftCards\WooCommerce\ListTable\GiftCardsListTable', 'Gift_Cards_List_Table');
+class_alias('GiftCards\WooCommerce\Logger\GiftCardsLogger', 'Gift_Cards_Logger');
+class_alias('GiftCards\WooCommerce\PDF\GiftCardPDFGenerator', 'Gift_Card_PDF_Generator');
 
 /**
  * Current plugin version.
@@ -54,9 +66,6 @@ function wc_gift_cards_woocommerce_inactive_notice() {
     esc_html_e( 'Gift Cards for WooCommerce® (free) requires WooCommerce® to be installed and active.', 'gift-cards-for-woocommerce' );
     echo '</p></div>';
 }
-
-// Include the custom gift cards list table class.
-require_once plugin_dir_path( __FILE__ ) . 'classes/Gift_Cards_List_Table.php';
 
 // Run plugin_activated from WC_Gift_Cards.
 register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
@@ -80,6 +89,9 @@ register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
 class WC_Gift_Cards {
 
     const DEFAULT_VALIDITY_DAYS = 365;
+    const OPTION_ENABLE_LOGGING = 'gift_cards_enable_logging';
+    const OPTION_DISPLAY_HOOK = 'gift_card_display_hook';
+    const OPTION_DISPLAY_DELIVERY_DATE = 'gift_card_display_delivery_date';
 
     /**
      * Predefined gift card amounts for generating variations.
@@ -104,8 +116,6 @@ class WC_Gift_Cards {
         // Initialize the plugin and database.
         register_activation_hook( __FILE__, [ $this, 'create_gift_card_table' ] );
 
-        // Initialiser le logger
-        require_once plugin_dir_path(__FILE__) . 'classes/WC_Gift_Cards_Logger.php';
         $this->logger = new Gift_Cards_Logger();
 
         // Register the uninstall hook to trigger the cleanup function.
@@ -167,7 +177,9 @@ class WC_Gift_Cards {
         add_action( 'wp_ajax_import_gift_cards_in_batches', [ $this, 'import_gift_cards_in_batches' ] );
 
         // Register the email class with WooCommerce.
-        add_filter( 'woocommerce_email_classes', [ $this, 'add_gift_card_email_class' ] );
+        add_action('woocommerce_init', function() {
+            add_filter('woocommerce_email_classes', [$this, 'add_gift_card_email_class']);
+        });
 
         // AJAX actions for editing gift cards.
         add_action( 'wp_ajax_get_gift_card_data', [ $this, 'get_gift_card_data_ajax' ] );
@@ -180,7 +192,7 @@ class WC_Gift_Cards {
         add_filter('woocommerce_variation_is_visible', [$this, 'maybe_hide_variations'], 10, 3);
 
         // Retrieve the hook selected in the options
-        $display_hook = get_option('gift_card_display_hook', 'woocommerce_review_order_before_payment');  
+        $display_hook = get_option(self::OPTION_DISPLAY_HOOK, 'woocommerce_review_order_before_payment');  
         // Add the block to the chosen hook
         add_action($display_hook, [$this, 'display_gift_card_checkbox']);
 
@@ -197,7 +209,7 @@ class WC_Gift_Cards {
      */
     private function is_product_addons_active() {
         $active = class_exists('Product_Extras_For_WooCommerce') || class_exists('PEWC_Product_Extra');
-        error_log('Product Add-ons Active: ' . ($active ? 'Yes' : 'No'));
+        /*error_log('Product Add-ons Active: ' . ($active ? 'Yes' : 'No'));*/
         return $active;
     }
 
@@ -385,6 +397,7 @@ class WC_Gift_Cards {
         if ( $deleted ) {
             // Clear cached data for the list table.
             $this->clear_gift_cards_list_cache();
+            $this->logger->log_deletion($code, get_current_user_id());
 
             wp_send_json_success( __( 'Gift card deleted successfully.', 'gift-cards-for-woocommerce' ) );
         } else {
@@ -567,12 +580,12 @@ class WC_Gift_Cards {
                 );
 
 
-                error_log(sprintf(
+                /*error_log(sprintf(
                     'Gift Card Creation - Delivery: %s, Validity: %d days, Expiration: %s',
                     $delivery_date,
                     $validity_days,
                     $expiration_date
-                ));
+                ));*/
 
 
                 // Prepare gift card object for email.
@@ -674,7 +687,7 @@ class WC_Gift_Cards {
      */
     public function display_admin_page() {
         $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'gift_cards';
-        $enable_logging = get_option('gift_cards_enable_logging', true);
+        $enable_logging = get_option(self::OPTION_ENABLE_LOGGING, 'yes');
 
         // Check for import status and display messages.
         if ( isset( $_GET['import_success'] ) ) {
@@ -925,10 +938,12 @@ class WC_Gift_Cards {
             $custom_email_image          = isset( $_POST['custom_email_image'] ) ? esc_url_raw( $_POST['custom_email_image'] ) : '';
             $custom_email_text           = isset( $_POST['custom_email_text'] ) ? wp_kses_post( $_POST['custom_email_text'] ) : '';
             $reminder_days_before_expiry = isset( $_POST['reminder_days_before_expiry'] ) ? absint( $_POST['reminder_days_before_expiry'] ) : 7;
+            $attach_pdf = isset( $_POST['attach_pdf'] ) ? 'yes' : 'no';
             
             update_option( 'gift_card_custom_email_image', $custom_email_image );
             update_option( 'gift_card_custom_email_text', $custom_email_text );
             update_option( 'gift_card_reminder_days_before_expiry', $reminder_days_before_expiry );
+            update_option( 'gift_card_attach_pdf', $attach_pdf );
 
             echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'gift-cards-for-woocommerce' ) . '</p></div>';
         }
@@ -937,6 +952,7 @@ class WC_Gift_Cards {
         $custom_email_image          = get_option( 'gift_card_custom_email_image', '' );
         $custom_email_text           = get_option( 'gift_card_custom_email_text', '' );
         $reminder_days_before_expiry = get_option( 'gift_card_reminder_days_before_expiry', 7 );
+        $attach_pdf = get_option('gift_card_attach_pdf', 'no');
 
         ?>
         <h2><?php esc_html_e( 'Gift Card Email Settings', 'gift-cards-for-woocommerce' ); ?></h2>
@@ -974,6 +990,18 @@ class WC_Gift_Cards {
                     <td>
                         <input type="number" name="reminder_days_before_expiry" id="reminder_days_before_expiry" value="<?php echo esc_attr( $reminder_days_before_expiry ); ?>" min="1" style="width:100px;" />
                         <p class="description"><?php esc_html_e( 'Enter the number of days before a gift card expires to send a reminder email.', 'gift-cards-for-woocommerce' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="attach_pdf"><?php esc_html_e('Attach PDF to Emails', 'gift-cards-for-woocommerce'); ?></label>
+                    </th>
+                    <td>
+                        <input type="checkbox" name="attach_pdf" id="attach_pdf" 
+                            <?php checked($attach_pdf, 'yes'); ?>>
+                        <p class="description">
+                            <?php esc_html_e('Include a PDF version of the gift card with the email.', 'gift-cards-for-woocommerce'); ?>
+                        </p>
                     </td>
                 </tr>
             </table>
@@ -1015,6 +1043,16 @@ class WC_Gift_Cards {
         });
         </script>
         <?php
+    }
+
+    /**
+     * Checks if PDF attachments are enabled in settings
+     *
+     * @since 1.0.2
+     * @return boolean
+     */
+    public function is_pdf_attachment_enabled() {
+        return get_option( 'gift_card_attach_pdf', 'no' ) === 'yes';
     }
 
     /**
@@ -1077,9 +1115,9 @@ class WC_Gift_Cards {
             $display_delivery_date = isset( $_POST['display_delivery_date'] ) ? 'yes' : 'no';
             update_option( 'gift_card_display_delivery_date', $display_delivery_date );
 
-            // Save display delivery date setting
-            $enable_logging = isset( $_POST['enable_logging'] ) ? 'yes' : 'no';
-            update_option( 'gift_cards_enable_logging', $enable_logging );
+            // Save logging setting
+            $enable_logging = isset($_POST['enable_logging']) ? 'yes' : 'no';
+            update_option('gift_cards_enable_logging', $enable_logging);
             
             echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'gift-cards-for-woocommerce' ) . '</p></div>';
         }
@@ -1087,7 +1125,8 @@ class WC_Gift_Cards {
         // Get existing settings
         $validity_days = get_option( 'gift_card_validity_days', self::DEFAULT_VALIDITY_DAYS );
         $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
-        $enable_logging = get_option('gift_cards_enable_logging', true);
+        $enable_logging = get_option(self::OPTION_ENABLE_LOGGING, 'yes');
+
         
         ?>
         <h2><?php esc_html_e( 'Gift Card Settings', 'gift-cards-for-woocommerce' ); ?></h2>
@@ -1136,7 +1175,7 @@ class WC_Gift_Cards {
                     </th>
                     <td>
                         <input type="checkbox" name="enable_logging" id="enable_logging" 
-                            <?php checked($enable_logging, true); ?>>
+                        <?php checked($enable_logging, 'yes'); ?>>
                         <p class="description">
                             <?php esc_html_e('Log gift card activities for tracking and debugging purposes.', 'gift-cards-for-woocommerce'); ?>
                         </p>
@@ -1464,7 +1503,7 @@ class WC_Gift_Cards {
             'label' => esc_html__('Message', 'gift-cards-for-woocommerce'),
         ]);
 
-        $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+        $display_delivery_date = get_option(self::OPTION_DISPLAY_DELIVERY_DATE, 'no');
         if ( $display_delivery_date === 'yes' ) {
             woocommerce_form_field('gift_card_delivery_date', [
                 'type'              => 'date',
@@ -1517,7 +1556,7 @@ class WC_Gift_Cards {
     public function add_gift_card_data_to_cart($cart_item_data, $product_id) {
         $is_product_gift = get_post_meta($product_id, '_is_product_gift', true);
         $is_gift_card = get_post_meta($product_id, '_is_gift_card', true);
-        $display_delivery_date = get_option('gift_card_display_delivery_date', 'no');
+        $display_delivery_date = get_option(self::OPTION_DISPLAY_DELIVERY_DATE, 'no');
 
         // Case 1: Normal product with offer option (_is_product_gift)
         if ($is_product_gift === 'yes') {
@@ -1544,7 +1583,7 @@ class WC_Gift_Cards {
                 // Recover the total price with extras
                 if (isset($_POST['pewc_total_calc_price'])) {
                     $total_price = floatval(str_replace(',', '.', $_POST['pewc_total_calc_price']));
-                    error_log('Total price from pewc_total_calc_price: ' . $total_price);
+                    /*error_log('Total price from pewc_total_calc_price: ' . $total_price);*/
                 } else {
                     $total_price = $base_price;
                 }
@@ -1553,12 +1592,12 @@ class WC_Gift_Cards {
                 $cart_item_data['base_price'] = $base_price;
                 
                 // Log détaillé
-                error_log(sprintf(
+                /*error_log(sprintf(
                     'Gift Card Price Details - Base: %f, Total: %f, Variation ID: %d',
                     $base_price,
                     $total_price,
                     $variation_id
-                ));
+                ));*/
             }
         }
         
@@ -1603,7 +1642,7 @@ class WC_Gift_Cards {
                 'name'  => esc_html__( 'Message', 'gift-cards-for-woocommerce' ),
                 'value' => sanitize_textarea_field( $cart_item['gift_card_message'] ),
             ];
-            $display_delivery_date = get_option( 'gift_card_display_delivery_date', 'no' );
+            $display_delivery_date = get_option(self::OPTION_DISPLAY_DELIVERY_DATE, 'no');
             if ( $display_delivery_date === 'yes' ) {
                 $item_data[] = [
                     'name'  => esc_html__( 'Delivery Date', 'gift-cards-for-woocommerce' ),
@@ -1628,7 +1667,7 @@ class WC_Gift_Cards {
     public function add_gift_card_data_to_order_items($item, $cart_item_key, $values, $order) {
         if (isset($values['gift_card_type'])) {
             try {
-                error_log('Gift card values: ' . print_r($values, true));
+                /*error_log('Gift card values: ' . print_r($values, true));*/
                 // 1. save raw data for internal processing
                 $item->update_meta_data('gift_card_type', sanitize_text_field($values['gift_card_type']));
                 $item->update_meta_data('gift_card_to', sanitize_text_field($values['gift_card_to']));
@@ -1638,7 +1677,7 @@ class WC_Gift_Cards {
                 
                 if (isset($values['gift_card_amount'])) {
                     $amount = floatval($values['gift_card_amount']);
-                    error_log('Saving gift card amount: ' . $amount);
+                    /*error_log('Saving gift card amount: ' . $amount);*/
                     $item->update_meta_data('gift_card_amount', $amount);
                 }
 
@@ -2283,17 +2322,27 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return array Modified email classes with the custom gift card email class added.
      */
-    public function add_gift_card_email_class( $email_classes ) {
-        // Include the custom email class.
-        require_once plugin_dir_path( __FILE__ ) . 'classes/WC_Gift_Card_Email.php';
-        require_once plugin_dir_path( __FILE__ ) . 'classes/WC_Gift_Card_Expiry_Reminder_Email.php';
+    public function add_gift_card_email_class($email_classes) {
+        // Vérifier que WooCommerce est chargé
+        if (!class_exists('WC_Email')) {
+            return $email_classes;
+        }
 
-        // Add the email classes to the list of email classes that WooCommerce® loads.
-        $email_classes['WC_Gift_Card_Email']                 = new WC_Gift_Card_Email();
-        $email_classes['WC_Gift_Card_Expiry_Reminder_Email'] = new WC_Gift_Card_Expiry_Reminder_Email();
+        // Charger les classes d'email
+        if (!class_exists('GiftCards\WooCommerce\Emails\GiftCardEmail')) {
+            require_once plugin_dir_path(__FILE__) . 'src/WooCommerce/Emails/GiftCardEmail.php';
+        }
+        if (!class_exists('GiftCards\WooCommerce\Emails\GiftCardExpiryReminderEmail')) {
+            require_once plugin_dir_path(__FILE__) . 'src/WooCommerce/Emails/GiftCardExpiryReminderEmail.php';
+        }
+
+        // Ajouter les classes d'email
+        $email_classes['WC_Gift_Card_Email'] = new \GiftCards\WooCommerce\Emails\GiftCardEmail();
+        $email_classes['WC_Gift_Card_Expiry_Reminder_Email'] = new \GiftCards\WooCommerce\Emails\GiftCardExpiryReminderEmail();
 
         return $email_classes;
     }
+
 
     /**
      * Retrieves gift card data via AJAX.
@@ -2419,11 +2468,11 @@ class WC_Gift_Cards {
             $this->clear_gift_cards_list_cache();
 
             // Log the balance adjustment.
-            $this->log_balance_adjustment( $code, $balance, get_current_user_id() );
+            $this->logger->log_balance_adjustment( $code, $balance, get_current_user_id() );
 
             // Conditionally log the expiration date update only if it has changed.
             if ( $is_expiration_changed ) {
-                $this->log_expiration_update( $code, $new_expiration_date_normalized, get_current_user_id() );
+                $this->logger->log_expiration_update( $code, $new_expiration_date_normalized, get_current_user_id() );
             }
 
             // Send a success response back to the AJAX call.
@@ -2451,18 +2500,18 @@ class WC_Gift_Cards {
         
         try {
             if(!is_numeric($user_id)) {
-                throw new Exception('User ID invalide');
+                throw new Exception('Invalid User ID');
             }
 
             $user = get_userdata( $user_id );
             if ( ! $user || ! $user->user_email ) {
-                throw new Exception('Utilisateur non trouvé ou email manquant');
+                throw new Exception('User not found or email missing');
             }
 
             $table_name = $wpdb->prefix . 'gift_cards';
             
             if($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-                throw new Exception('Table gift_cards non trouvée');
+                throw new Exception('Table gift_cards not found');
             }
 
             $gift_cards = $wpdb->get_results(
@@ -2473,7 +2522,7 @@ class WC_Gift_Cards {
             );
 
             if($wpdb->last_error) {
-                throw new Exception('Erreur SQL: ' . $wpdb->last_error);
+                throw new Exception('SQL error: ' . $wpdb->last_error);
             }
 
             if ( ! empty( $gift_cards ) ) {
@@ -2487,7 +2536,7 @@ class WC_Gift_Cards {
                     );
 
                     if($update_result === false) {
-                        throw new Exception('Erreur lors de la mise à jour de la carte cadeau ID: ' . $gift_card->id);
+                        throw new Exception('Error updating gift card ID: ' . $gift_card->id);
                     }
 
                     $this->log_activity( 'associated_with_user', $gift_card->code, null, $user_id );
@@ -2497,7 +2546,7 @@ class WC_Gift_Cards {
             return true;
 
         } catch (Exception $e) {
-            error_log('Erreur dans associate_gift_cards_with_user: ' . $e->getMessage());
+            error_log('Error in associate_gift_cards_with_user: ' . $e->getMessage());
             return false;
         }
     }
@@ -2638,7 +2687,7 @@ class WC_Gift_Cards {
      * Handles the logging status change and redirects to the gift cards page
      * if the user is currently viewing the activity page.
      *
-     * @since  1.0.0
+     * @since  1.0.2
      * @return void
      */
     public function handle_logging_status_change() {
@@ -2655,7 +2704,6 @@ class WC_Gift_Cards {
             }
         }
     }
-
 
     /**
      * Consolidate gift cards by associating missing user_ids

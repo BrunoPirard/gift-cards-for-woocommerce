@@ -4,19 +4,26 @@
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [
-      {
-        "name": "Robert DeVore",
-        "email": "me@robertdevore.com",
-        "homepage": "https://robertdevore.com"
-      }
+        {
+            "name": "Robert DeVore",
+            "email": "me@robertdevore.com",
+            "homepage": "https://robertdevore.com"
+        }
     ],
     "require": {
-      "php": ">=7.4",
-      "composer/installers": "~1.0"
+        "php": ">=7.4",
+        "composer/installers": "~1.0",
+        "tecnickcom/tcpdf": "^6.4"
     },
     "autoload": {
-      "psr-4": {
-        "GiftCards\\WooCommerce\\": "classes/"
-      }
+        "psr-4": {
+            "GiftCards\\": "src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
     }
 }
+
