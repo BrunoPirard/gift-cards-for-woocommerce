@@ -21,6 +21,11 @@
  * Update URI:  https://github.com/robertdevore/gift-cards-for-woocommerce/
  */
 
+if (!class_exists('TCPDF')) {
+    require_once plugin_dir_path(__FILE__) . 'vendor/tecnickcom/tcpdf/tcpdf.php';
+}
+
+
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -69,6 +74,16 @@ function wc_gift_cards_woocommerce_inactive_notice() {
 
 // Run plugin_activated from WC_Gift_Cards.
 register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
+
+
+register_activation_hook(__FILE__, 'activate_gift_card_cron');
+
+function activate_gift_card_cron() {
+    if (!wp_next_scheduled('send_gift_card_email_with_pdf')) {
+        wp_schedule_event(time(), 'hourly', 'send_gift_card_email_with_pdf');
+    }
+}
+
 
 /**
  * Main class for managing gift card functionality in WooCommerce.

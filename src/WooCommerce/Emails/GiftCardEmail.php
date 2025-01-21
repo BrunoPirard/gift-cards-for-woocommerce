@@ -49,14 +49,15 @@ class GiftCardEmail extends \WC_Email {
         // Corriger le chemin du template_base pour pointer vers la racine du plugin
         $this->template_base  = trailingslashit(plugin_dir_path(dirname(dirname(dirname(__FILE__))))) . 'templates/';
 
-        error_log('Plugin base path: ' . plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
-        error_log('Template base path: ' . $this->template_base);
+        //error_log('Plugin base path: ' . plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
+        //error_log('Template base path: ' . $this->template_base);
 
         // Initialize gift_card property
         $this->gift_card = null;
 
         // Triggers for this email
         add_action( 'wc_gift_card_email_notification', [ $this, 'trigger' ], 10, 1 );
+        add_action('send_gift_card_email_with_pdf', array($this, 'send_email_with_pdf'), 10, 1);
 
         // Call parent constructor
         parent::__construct();
@@ -66,6 +67,12 @@ class GiftCardEmail extends \WC_Email {
         $this->enabled   = 'yes';
     }
 
+    public function get_headers() {
+        $site_name = get_bloginfo('name');
+        $headers = parent::get_headers();
+        $headers .= "\r\nFrom: {$site_name} <" . get_bloginfo('admin_email') . ">";
+        return $headers;
+    }
 
     /**
      * Triggers the email notification when a gift card is issued.
@@ -91,75 +98,46 @@ class GiftCardEmail extends \WC_Email {
     $this->placeholders['{sender_name}'] = $gift_card->sender_name;
     $this->placeholders['{gift_card_amount}'] = wc_price($gift_card->balance);
 
-    if (!$this->is_enabled()) {
-        error_log('Email est désactivé');
+    if (!$this->is_enabled() || !$this->get_recipient()) {
+        error_log('Email est désactivé ou pas de destinataire');
         return;
     }
 
-    if (!$this->get_recipient()) {
-        error_log('Pas de destinataire');
-        return;
-    }
-
-    error_log('Vérification des paramètres OK');
-
+    // Préparer le contenu de l'email
+    $subject = $this->get_subject();
+    $content = $this->get_content();
+    $headers = $this->get_headers();
+    
     // Changer la valeur par défaut à 'no'
     $attach_pdf = get_option('gift_card_attach_pdf', 'no');
     error_log('Option PDF attachment: ' . $attach_pdf);
 
-    try {
-        // Préparer le contenu de l'email
-        $subject = $this->get_subject();
-        $content = $this->get_content();
-        $headers = $this->get_headers();
-        $attachments = [];
-
-        if ($attach_pdf === 'yes') {
-            error_log('Tentative de génération du PDF');
-            
-            if (!class_exists('GiftCards\WooCommerce\PDF\Gift_Card_PDF_Generator')) {
-                throw new \Exception('PDF Generator class not found');
-            }
-
-            $pdf_generator = new \GiftCards\WooCommerce\PDF\Gift_Card_PDF_Generator($gift_card);
-            $pdf_content = $pdf_generator->generate();
-            
-            $upload_dir = wp_upload_dir();
-            $pdf_dir = $upload_dir['path'] . '/gift-cards';
-            if (!file_exists($pdf_dir)) {
-                wp_mkdir_p($pdf_dir);
-            }
-            
-            $pdf_path = $pdf_dir . '/gift-card-' . $gift_card->code . '.pdf';
-            file_put_contents($pdf_path, $pdf_content);
-            $attachments[] = $pdf_path;
-            
-            error_log('PDF généré avec succès: ' . $pdf_path);
+    if ($attach_pdf === 'yes') {
+        error_log('Planification de l\'envoi différé avec PDF');
+        try {
+            // Envoi immédiat plutôt que différé
+            $this->send_email_with_pdf([
+                [
+                    'recipient' => $this->get_recipient(),
+                    'subject' => $subject,
+                    'content' => $content,
+                    'headers' => $headers,
+                    'gift_card' => $gift_card
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log('Erreur lors de l\'envoi avec PDF: ' . $e->getMessage());
+            // Tentative d'envoi sans PDF en cas d'erreur
+            wp_mail(
+                $this->get_recipient(),
+                $subject,
+                $content,
+                $headers,
+                []
+            );
         }
-
-        // Envoyer l'email
-        error_log('Tentative d\'envoi de l\'email à ' . $this->get_recipient());
-        
-        $sent = wp_mail(
-            $this->get_recipient(),
-            $subject,
-            $content,
-            $headers,
-            $attachments
-        );
-
-        error_log('Résultat de l\'envoi: ' . ($sent ? 'succès' : 'échec'));
-
-        // Nettoyer le PDF si nécessaire
-        if ($attach_pdf === 'yes' && !empty($pdf_path) && file_exists($pdf_path)) {
-            unlink($pdf_path);
-            error_log('PDF temporaire supprimé');
-        }
-
-    } catch (Exception $e) {
-        error_log('Erreur lors de l\'envoi de l\'email: ' . $e->getMessage());
-        
-        // Tentative d'envoi sans PDF en cas d'erreur
+    } else {
+        error_log('Envoi immédiat sans PDF');
         $sent = wp_mail(
             $this->get_recipient(),
             $subject,
@@ -167,11 +145,99 @@ class GiftCardEmail extends \WC_Email {
             $headers,
             []
         );
+        error_log('Email sans PDF envoyé: ' . ($sent ? 'succès' : 'échec'));
     }
 
     error_log('Fin de trigger() - GiftCardEmail');
-    return $sent;
+    return true;
 }
+
+
+    public function send_email_with_pdf($args) {
+    error_log('Début de send_email_with_pdf');
+    
+    try {
+        // Les arguments sont dans le premier élément du tableau
+        $args = $args[0];
+        
+        // Vérifier que tous les arguments nécessaires sont présents
+        if (!isset($args['recipient']) || !isset($args['subject']) || 
+            !isset($args['content']) || !isset($args['headers']) || 
+            !isset($args['gift_card'])) {
+            throw new \Exception('Missing required arguments for email');
+        }
+
+        // Utiliser le bon namespace et le bon chemin selon PSR-4
+        if (!class_exists('GiftCards\WooCommerce\PDF\GiftCardPDFGenerator')) {
+            // Construire le chemin correct vers le fichier
+            $pdf_generator_path = plugin_dir_path(dirname(dirname(dirname(__FILE__)))) 
+                               . 'src/WooCommerce/PDF/GiftCardPDFGenerator.php';
+            
+            error_log('Tentative de chargement du fichier PDF Generator: ' . $pdf_generator_path);
+            
+            if (!file_exists($pdf_generator_path)) {
+                throw new \Exception('PDF Generator file not found at: ' . $pdf_generator_path);
+            }
+            
+            require_once $pdf_generator_path;
+        }
+
+        $pdf_generator = new \GiftCards\WooCommerce\PDF\GiftCardPDFGenerator($args['gift_card']);
+        $pdf_content = $pdf_generator->generate();
+        
+        $upload_dir = wp_upload_dir();
+        $pdf_dir = $upload_dir['path'] . '/gift-cards';
+        if (!file_exists($pdf_dir)) {
+            wp_mkdir_p($pdf_dir);
+        }
+        
+        $pdf_path = $pdf_dir . '/gift-card-' . $args['gift_card']->code . '.pdf';
+        file_put_contents($pdf_path, $pdf_content);
+        
+        $attachments = array($pdf_path);
+        
+        error_log('Envoi de l\'email avec PDF à : ' . $args['recipient']);
+        error_log('Sujet : ' . $args['subject']);
+        error_log('Pièce jointe : ' . $pdf_path);
+        
+        $sent = wp_mail(
+            $args['recipient'],
+            $args['subject'],
+            $args['content'],
+            $args['headers'],
+            $attachments
+        );
+        
+        error_log('Email avec PDF envoyé: ' . ($sent ? 'succès' : 'échec'));
+        
+        // Nettoyer le fichier PDF
+        if (file_exists($pdf_path)) {
+            unlink($pdf_path);
+            error_log('PDF temporaire supprimé: ' . $pdf_path);
+        }
+        
+    } catch (\Exception $e) {
+        error_log('Erreur lors de l\'envoi de l\'email avec PDF: ' . $e->getMessage());
+        
+        // Envoyer sans PDF en cas d'erreur
+        if (isset($args['recipient']) && isset($args['subject']) && 
+            isset($args['content']) && isset($args['headers'])) {
+            wp_mail(
+                $args['recipient'],
+                $args['subject'],
+                $args['content'],
+                $args['headers'],
+                []
+            );
+            error_log('Email envoyé sans PDF suite à une erreur');
+        } else {
+            error_log('Impossible d\'envoyer l\'email même sans PDF - arguments manquants');
+        }
+    }
+    
+    error_log('Fin de send_email_with_pdf');
+}
+
 
     /**
      * Gets the HTML content for the email.

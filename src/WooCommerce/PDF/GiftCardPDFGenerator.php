@@ -34,12 +34,24 @@ class GiftCardPDFGenerator {
         $this->debug_paths();
         $this->gift_card = $gift_card;
     }
-
     
+    /**
+     * Génère le PDF de la carte-cadeau.
+     *
+     * @return string Le PDF généré.
+     *
+     * @throws \Exception Si une erreur survient pendant la génération du PDF.
+     */
     public function generate() {
-        try {
-            // Créer une nouvelle instance de TCPDF avec le namespace complet
-            $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    error_log('Début de la génération du PDF');
+    try {
+        if (!class_exists('TCPDF')) {
+            error_log('La classe TCPDF n\'est pas disponible');
+            throw new \Exception('TCPDF class not available');
+        }
+
+        error_log('Création d\'une nouvelle instance de TCPDF');
+        $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             
             // Définir les informations du document
             $pdf->SetCreator(PDF_CREATOR);
@@ -129,21 +141,20 @@ class GiftCardPDFGenerator {
     }
 
     private function debug_paths() {
-    $paths = [
-        'Current File' => __FILE__,
-        'Plugin Root' => dirname(dirname(__DIR__)),
-        'Autoloader Path' => dirname(dirname(__DIR__)) . '/vendor/autoload.php',
-        'TCPDF Direct Path' => dirname(dirname(__DIR__)) . '/vendor/tecnickcom/tcpdf/tcpdf.php'
-    ];
-    
-    foreach ($paths as $label => $path) {
-        error_log(sprintf(
-            '%s: %s (Exists: %s)',
-            $label,
-            $path,
-            file_exists($path) ? 'Yes' : 'No'
-        ));
+        $paths = [
+            'Current File' => __FILE__,
+            'Plugin Root' => dirname(dirname(__DIR__)),
+            'Autoloader Path' => dirname(dirname(__DIR__)) . '/vendor/autoload.php',
+            'TCPDF Direct Path' => dirname(dirname(__DIR__)) . '/vendor/tecnickcom/tcpdf/tcpdf.php'
+        ];
+        
+        foreach ($paths as $label => $path) {
+            error_log(sprintf(
+                '%s: %s (Exists: %s)',
+                $label,
+                $path,
+                file_exists($path) ? 'Yes' : 'No'
+            ));
+        }
     }
-}
-
 }
