@@ -33,10 +33,10 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Ensure WooCommerce is active.
-if ( ! in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) && ! class_exists( 'WooCommerce' ) ) {
+/*if ( ! in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) && ! class_exists( 'WooCommerce' ) ) {
     add_action( 'admin_notices', 'wc_gift_cards_woocommerce_inactive_notice' );
     return;
-}
+}*/
 
 require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 
@@ -75,7 +75,7 @@ function wc_gift_cards_woocommerce_inactive_notice() {
 
 // Run plugin_activated from WC_Gift_Cards.
 register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
-register_activation_hook(__FILE__, 'activate_gift_card_cron');
+register_activation_hook( __FILE__, 'activate_gift_card_cron' );
 
 function activate_gift_card_cron() {
     if (!wp_next_scheduled('send_gift_card_email_with_pdf')) {
@@ -126,6 +126,9 @@ class WC_Gift_Cards {
      * Initializes the plugin and sets up hooks.
      */
     public function __construct() {
+
+        add_action('before_woocommerce_init', [$this, 'declare_hpos_compatibility']);
+
         // Initialize the plugin and database.
         register_activation_hook( __FILE__, [ $this, 'create_gift_card_table' ] );
 
@@ -214,6 +217,20 @@ class WC_Gift_Cards {
     }
 
     /**
+     * Declares compatibility with WooCommerce High-Performance Order Storage (HPOS).
+     * 
+     * This method checks if the WooCommerce FeaturesUtil class exists and declares
+     * compatibility with the custom order tables feature, which is part of WooCommerce's
+     * High-Performance Order Storage.
+     */
+
+    public function declare_hpos_compatibility() {
+        if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        }
+    }
+
+    /**
      * Checks whether Product Add-Ons Ultimate is active
      * 
      * @since  1.0.2
@@ -235,16 +252,37 @@ class WC_Gift_Cards {
      */
     public static function plugin_activated() {
         $instance = new self();
-
-        // Create the gift card database table.
+        
+        // Créer les tables et initialiser le plugin
         $instance->create_gift_card_table();
         $instance->create_activity_table();
-
-        // Add custom "My Account" endpoint for the plugin.
         $instance->add_my_account_endpoint();
-
-        // Flush rewrite rules for proper endpoint registration.
+        
         flush_rewrite_rules();
+    }
+
+    /**
+     * Tests High-Performance Order Storage (HPOS) compatibility.
+     *
+     * This function creates a test order, adds metadata to it, saves the order,
+     * and retrieves the metadata to verify that it has been stored and retrieved correctly.
+     * Logs an error if the metadata does not match the expected value.
+     *
+     * @return void
+     */
+    public function test_hpos_compatibility() {
+        // Vérifier que les métadonnées fonctionnent
+        $test_order = wc_create_order();
+        $test_order->update_meta_data('_test_meta', 'test_value');
+        $test_order->save();
+        
+        $retrieved_value = $test_order->get_meta('_test_meta');
+        
+        if ($retrieved_value !== 'test_value') {
+            error_log('HPOS compatibility test failed: metadata not working correctly');
+        }
+        
+        $test_order->delete(true);
     }
 
     /**
@@ -1395,9 +1433,11 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function save_gift_card_to_order( $order_id ) {
-        if ( ! empty( $_POST['gift_card_code'] ) ) {
-            update_post_meta( $order_id, '_gift_card_code', sanitize_text_field( $_POST['gift_card_code'] ) );
+    public function save_gift_card_to_order($order_id) {
+        $order = wc_get_order($order_id);
+        if (!empty($_POST['gift_card_code'])) {
+            $order->update_meta_data('_gift_card_code', sanitize_text_field($_POST['gift_card_code']));
+            $order->save();
         }
     }
 
@@ -2097,13 +2137,11 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function apply_gift_card_to_order( $order, $data ) {
-        if ( WC()->session->get( 'apply_gift_card_balance' ) ) {
-            $discount_amount = WC()->session->get( 'gift_card_discount_amount' );
-            $discount_amount = floatval( $discount_amount );
-
-            if ( $discount_amount > 0 ) {
-                $order->update_meta_data( '_applied_gift_card_discount', $discount_amount );
+    public function apply_gift_card_to_order($order, $data) {
+        if (WC()->session->get('apply_gift_card_balance')) {
+            $discount_amount = WC()->session->get('gift_card_discount_amount');
+            if ($discount_amount > 0) {
+                $order->update_meta_data('_applied_gift_card_discount', $discount_amount);
                 $order->save();
             }
         }
@@ -2120,13 +2158,13 @@ class WC_Gift_Cards {
      * @since  1.0.0
      * @return void
      */
-    public function reduce_gift_card_balance( $order_id ) {
-        $order   = wc_get_order( $order_id );
+    public function reduce_gift_card_balance($order_id) {
+        $order = wc_get_order($order_id);
         $user_id = $order->get_user_id();
-
-        if ( ! $user_id ) return;
-
-        $discount_amount = floatval( $order->get_meta( '_applied_gift_card_discount' ) );
+        
+        if (!$user_id) return;
+        
+        $discount_amount = floatval($order->get_meta('_applied_gift_card_discount'));
 
         if ( $discount_amount > 0 ) {
             global $wpdb;

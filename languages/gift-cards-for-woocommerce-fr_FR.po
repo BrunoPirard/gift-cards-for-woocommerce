@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Gift Cards for WooCommerce®\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-17 12:49+0200\n"
-"PO-Revision-Date: 2025-01-17 12:50+0200\n"
+"POT-Creation-Date: 2025-01-21 18:55+0200\n"
+"PO-Revision-Date: 2025-01-21 18:57+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -22,7 +22,7 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 "X-Poedit-SearchPathExcluded-0: *.min.js\n"
 
-#: gift-cards-for-woocommerce.php:54
+#: gift-cards-for-woocommerce.php:72
 msgid ""
 "Gift Cards for WooCommerce® (free) requires WooCommerce® to be installed and "
 "active."
@@ -30,251 +30,264 @@ msgstr ""
 "Gift Cards for WooCommerce® (gratuit) nécessite que WooCommerce® soit "
 "installé et actif."
 
-#: gift-cards-for-woocommerce.php:330
+#: gift-cards-for-woocommerce.php:406
 msgid "Are you sure you want to delete this gift card?"
 msgstr "Confirmez-vous la suppression de cette carte cadeau ?"
 
-#: gift-cards-for-woocommerce.php:331
+#: gift-cards-for-woocommerce.php:407
 msgid "An error occurred. Please try again."
 msgstr "Une erreur est survenue. Veuillez réessayer."
 
-#: gift-cards-for-woocommerce.php:356 gift-cards-for-woocommerce.php:2271
-#: gift-cards-for-woocommerce.php:2311
+#: gift-cards-for-woocommerce.php:432 gift-cards-for-woocommerce.php:2408
+#: gift-cards-for-woocommerce.php:2448
 msgid "You do not have permission to perform this action."
 msgstr "Vous n'êtes pas autorisé à effectuer cette action."
 
-#: gift-cards-for-woocommerce.php:362 gift-cards-for-woocommerce.php:2277
-#: gift-cards-for-woocommerce.php:2317
+#: gift-cards-for-woocommerce.php:438 gift-cards-for-woocommerce.php:2414
+#: gift-cards-for-woocommerce.php:2454
 msgid "Invalid gift card code."
 msgstr "Code de carte-cadeau non valide."
 
-#: gift-cards-for-woocommerce.php:375
+#: gift-cards-for-woocommerce.php:452
 msgid "Gift card deleted successfully."
 msgstr "Carte cadeau supprimée avec succès."
 
-#: gift-cards-for-woocommerce.php:377
+#: gift-cards-for-woocommerce.php:454
 msgid "Failed to delete gift card."
 msgstr "Échec de la suppression de la carte cadeau."
 
-#: gift-cards-for-woocommerce.php:453
+#: gift-cards-for-woocommerce.php:530
 msgid "Invalid or expired gift card code."
 msgstr "Code de carte cadeau invalide ou expiré."
 
-#: gift-cards-for-woocommerce.php:644 gift-cards-for-woocommerce.php:645
-#: gift-cards-for-woocommerce.php:676 gift-cards-for-woocommerce.php:694
-#: gift-cards-for-woocommerce.php:1858 classes/Gift_Cards_List_Table.php:31
+#: gift-cards-for-woocommerce.php:719 gift-cards-for-woocommerce.php:720
+#: gift-cards-for-woocommerce.php:752 gift-cards-for-woocommerce.php:770
+#: gift-cards-for-woocommerce.php:1988
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:30
 msgid "Gift Cards"
 msgstr "Cartes cadeau"
 
-#: gift-cards-for-woocommerce.php:667
+#: gift-cards-for-woocommerce.php:743
 msgid "CSV imported successfully!"
 msgstr "CSV importé avec succès !"
 
-#: gift-cards-for-woocommerce.php:669
+#: gift-cards-for-woocommerce.php:745
 msgid "Error importing CSV. Please check the file format and try again."
 msgstr ""
 "Erreur lors de l'importation de CSV. Veuillez vérifier le format du fichier "
 "et réessayer."
 
-#: gift-cards-for-woocommerce.php:679
+#: gift-cards-for-woocommerce.php:755
 msgid "Export CSV"
 msgstr "Export CSV"
 
-#: gift-cards-for-woocommerce.php:683
+#: gift-cards-for-woocommerce.php:759
 msgid "Import CSV"
 msgstr "Import CSV"
 
-#: gift-cards-for-woocommerce.php:697
+#: gift-cards-for-woocommerce.php:775
 msgid "Activity"
 msgstr "Activité"
 
-#: gift-cards-for-woocommerce.php:700
+#: gift-cards-for-woocommerce.php:780
 msgid "Add Card"
 msgstr "Ajouter une carte"
 
-#: gift-cards-for-woocommerce.php:703
+#: gift-cards-for-woocommerce.php:783
 msgid "Settings Email"
 msgstr "Paramètres Email"
 
-#: gift-cards-for-woocommerce.php:706
+#: gift-cards-for-woocommerce.php:786
 msgid "Settings"
 msgstr "Paramètres"
 
-#: gift-cards-for-woocommerce.php:739 gift-cards-for-woocommerce.php:852
+#: gift-cards-for-woocommerce.php:824 gift-cards-for-woocommerce.php:937
 msgid "Gift Card Balance"
 msgstr "Solde de la Carte Cadeau"
 
-#: gift-cards-for-woocommerce.php:744 gift-cards-for-woocommerce.php:876
-#: gift-cards-for-woocommerce.php:1908 gift-cards-for-woocommerce.php:2115
-#: classes/Gift_Cards_List_Table.php:47
+#: gift-cards-for-woocommerce.php:829 gift-cards-for-woocommerce.php:961
+#: gift-cards-for-woocommerce.php:2038 gift-cards-for-woocommerce.php:2243
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:46
 msgid "Expiration Date"
 msgstr "Date d'expiration"
 
-#: gift-cards-for-woocommerce.php:749 gift-cards-for-woocommerce.php:868
-#: gift-cards-for-woocommerce.php:2117 classes/Gift_Cards_List_Table.php:45
+#: gift-cards-for-woocommerce.php:834 gift-cards-for-woocommerce.php:953
+#: gift-cards-for-woocommerce.php:2245
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:44
 msgid "Recipient Email"
 msgstr "E-mail du destinataire"
 
-#: gift-cards-for-woocommerce.php:754 gift-cards-for-woocommerce.php:864
+#: gift-cards-for-woocommerce.php:839 gift-cards-for-woocommerce.php:949
 msgid "Sender Name"
 msgstr "Nom de l’expéditeur"
 
-#: gift-cards-for-woocommerce.php:759 gift-cards-for-woocommerce.php:1423
-#: gift-cards-for-woocommerce.php:1562 gift-cards-for-woocommerce.php:1621
-#: gift-cards-for-woocommerce.php:2118
+#: gift-cards-for-woocommerce.php:844 gift-cards-for-woocommerce.php:1553
+#: gift-cards-for-woocommerce.php:1692 gift-cards-for-woocommerce.php:1751
+#: gift-cards-for-woocommerce.php:2246
 msgid "Message"
 msgstr "Message"
 
-#: gift-cards-for-woocommerce.php:764
+#: gift-cards-for-woocommerce.php:849
 msgid "Save Changes"
 msgstr "Sauvegarder les changements"
 
-#: gift-cards-for-woocommerce.php:794
+#: gift-cards-for-woocommerce.php:879
 msgid "Search Gift Cards"
 msgstr "Rechercher Cartes Cadeaux"
 
-#: gift-cards-for-woocommerce.php:813
+#: gift-cards-for-woocommerce.php:898
 msgid "Gift Card Activity Log"
 msgstr "Journal d'activité des cartes-cadeaux"
 
-#: gift-cards-for-woocommerce.php:815
+#: gift-cards-for-woocommerce.php:900
 msgid "No activity found."
 msgstr "Aucune activité trouvée."
 
-#: gift-cards-for-woocommerce.php:820
+#: gift-cards-for-woocommerce.php:905
 msgid "Date"
 msgstr "Date"
 
-#: gift-cards-for-woocommerce.php:820
+#: gift-cards-for-woocommerce.php:905
 msgid "Action"
 msgstr "Action"
 
-#: gift-cards-for-woocommerce.php:820 gift-cards-for-woocommerce.php:1906
-#: gift-cards-for-woocommerce.php:2113 classes/Gift_Cards_List_Table.php:43
+#: gift-cards-for-woocommerce.php:905 gift-cards-for-woocommerce.php:2036
+#: gift-cards-for-woocommerce.php:2241
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:42
 msgid "Code"
 msgstr "Code"
 
-#: gift-cards-for-woocommerce.php:820 gift-cards-for-woocommerce.php:1631
+#: gift-cards-for-woocommerce.php:905 gift-cards-for-woocommerce.php:1761
 msgid "Amount"
 msgstr "Montant"
 
-#: gift-cards-for-woocommerce.php:820 gift-cards-for-woocommerce.php:2122
+#: gift-cards-for-woocommerce.php:905 gift-cards-for-woocommerce.php:2250
 msgid "User ID"
 msgstr "Utilisateur ID"
 
-#: gift-cards-for-woocommerce.php:848
+#: gift-cards-for-woocommerce.php:933
 msgid "Issue New Gift Card"
 msgstr "Émission d'une nouvelle carte-cadeau"
 
-#: gift-cards-for-woocommerce.php:854
+#: gift-cards-for-woocommerce.php:939
 msgid "Enter the balance for the gift card."
 msgstr "Entrez le solde de la carte cadeau."
 
-#: gift-cards-for-woocommerce.php:857 gift-cards-for-woocommerce.php:1401
-#: gift-cards-for-woocommerce.php:1550 gift-cards-for-woocommerce.php:2121
+#: gift-cards-for-woocommerce.php:942 gift-cards-for-woocommerce.php:1531
+#: gift-cards-for-woocommerce.php:1680 gift-cards-for-woocommerce.php:2249
 msgid "Gift Card Type"
 msgstr "Type de carte cadeau"
 
-#: gift-cards-for-woocommerce.php:859 gift-cards-for-woocommerce.php:1404
-#: gift-cards-for-woocommerce.php:1611 classes/Gift_Cards_List_Table.php:204
+#: gift-cards-for-woocommerce.php:944 gift-cards-for-woocommerce.php:1534
+#: gift-cards-for-woocommerce.php:1741
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:203
 msgid "Digital"
 msgstr "Digitale"
 
-#: gift-cards-for-woocommerce.php:860 gift-cards-for-woocommerce.php:1405
-#: gift-cards-for-woocommerce.php:1612 classes/Gift_Cards_List_Table.php:205
+#: gift-cards-for-woocommerce.php:945 gift-cards-for-woocommerce.php:1535
+#: gift-cards-for-woocommerce.php:1742
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:204
 msgid "Physical"
 msgstr "Physique"
 
-#: gift-cards-for-woocommerce.php:872 gift-cards-for-woocommerce.php:1430
-#: gift-cards-for-woocommerce.php:1568 gift-cards-for-woocommerce.php:1624
-#: gift-cards-for-woocommerce.php:2120
+#: gift-cards-for-woocommerce.php:957 gift-cards-for-woocommerce.php:1560
+#: gift-cards-for-woocommerce.php:1698 gift-cards-for-woocommerce.php:1754
+#: gift-cards-for-woocommerce.php:2248
 msgid "Delivery Date"
 msgstr "Date de livraison"
 
-#: gift-cards-for-woocommerce.php:880
+#: gift-cards-for-woocommerce.php:965
 msgid "Personal Message"
 msgstr "Message personnel"
 
-#: gift-cards-for-woocommerce.php:881
+#: gift-cards-for-woocommerce.php:966
 msgid "Enter your message here..."
 msgstr "Saisissez votre message ici..."
 
-#: gift-cards-for-woocommerce.php:884
+#: gift-cards-for-woocommerce.php:969
 msgid "Issue Gift Card"
 msgstr "Émission d'une carte-cadeau"
 
-#: gift-cards-for-woocommerce.php:909 gift-cards-for-woocommerce.php:1056
+#: gift-cards-for-woocommerce.php:996 gift-cards-for-woocommerce.php:1170
 msgid "Settings saved."
 msgstr "Paramètres sauvegardés."
 
-#: gift-cards-for-woocommerce.php:918
+#: gift-cards-for-woocommerce.php:1006
 msgid "Gift Card Email Settings"
 msgstr "Paramètres de l'e-mail de la carte-cadeau"
 
-#: gift-cards-for-woocommerce.php:924
+#: gift-cards-for-woocommerce.php:1012
 msgid "Custom Email Image"
 msgstr "Image personnalisée de l'e-mail"
 
-#: gift-cards-for-woocommerce.php:928
+#: gift-cards-for-woocommerce.php:1016
 msgid "Upload Image"
 msgstr "Télécharger une image"
 
-#: gift-cards-for-woocommerce.php:929
+#: gift-cards-for-woocommerce.php:1017
 msgid "Upload an image to use in the gift card emails."
 msgstr ""
 "Téléchargez une image à utiliser dans les courriels relatifs aux cartes-"
 "cadeaux."
 
-#: gift-cards-for-woocommerce.php:934
+#: gift-cards-for-woocommerce.php:1022
 msgid "Custom Email Text"
 msgstr "Texte de l'e-mail personnalisé"
 
-#: gift-cards-for-woocommerce.php:943
+#: gift-cards-for-woocommerce.php:1031
 msgid "Enter custom text to include in the gift card emails."
 msgstr ""
 "Saisissez un texte personnalisé à inclure dans les courriels relatifs aux "
 "cartes-cadeaux."
 
-#: gift-cards-for-woocommerce.php:948
+#: gift-cards-for-woocommerce.php:1036
 msgid "Days Before Expiration for Reminder Email"
 msgstr "Jours avant l'expiration pour l'envoi d'un courriel de rappel"
 
-#: gift-cards-for-woocommerce.php:952
+#: gift-cards-for-woocommerce.php:1040
 msgid ""
 "Enter the number of days before a gift card expires to send a reminder email."
 msgstr ""
 "Entrez le nombre de jours avant l'expiration d'une carte cadeau pour envoyer "
 "un e-mail de rappel."
 
-#: gift-cards-for-woocommerce.php:957 gift-cards-for-woocommerce.php:1126
+#: gift-cards-for-woocommerce.php:1045
+msgid "Attach PDF to Emails"
+msgstr "Attach PDF to Emails"
+
+#: gift-cards-for-woocommerce.php:1051
+msgid "Include a PDF version of the gift card with the email."
+msgstr "Joignez à l'e-mail une version PDF de la carte-cadeau."
+
+#: gift-cards-for-woocommerce.php:1057 gift-cards-for-woocommerce.php:1254
 msgid "Save Settings"
 msgstr "Sauvegarder les paramètres"
 
-#: gift-cards-for-woocommerce.php:977
+#: gift-cards-for-woocommerce.php:1077
 msgid "Select Image"
 msgstr "Sélectionner une image"
 
-#: gift-cards-for-woocommerce.php:1009
+#: gift-cards-for-woocommerce.php:1119
 msgid "Before Payment"
 msgstr "Avant paiement"
 
-#: gift-cards-for-woocommerce.php:1010
+#: gift-cards-for-woocommerce.php:1120
 msgid "Before Order Total"
 msgstr "Avant le total de la commande"
 
-#: gift-cards-for-woocommerce.php:1011
+#: gift-cards-for-woocommerce.php:1121
 msgid "After Order Total"
 msgstr "Après commande Total"
 
-#: gift-cards-for-woocommerce.php:1012
+#: gift-cards-for-woocommerce.php:1122
 msgid "Before Customer Details"
 msgstr "Avant les détails du client"
 
-#: gift-cards-for-woocommerce.php:1013
+#: gift-cards-for-woocommerce.php:1123
 msgid "After Customer Details"
 msgstr "Après Détails Client"
 
-#: gift-cards-for-woocommerce.php:1025
+#: gift-cards-for-woocommerce.php:1135
 #, php-format
 msgid ""
 "Consolidation completed. Processed %d gift cards, updated %d user "
@@ -283,19 +296,19 @@ msgstr ""
 "Consolidation terminée. Traitement de %d cartes cadeaux, mise à jour de %d "
 "associations d'utilisateurs."
 
-#: gift-cards-for-woocommerce.php:1032
+#: gift-cards-for-woocommerce.php:1142
 msgid "Errors occurred during consolidation:"
 msgstr "Des erreurs se sont produites lors de la consolidation :"
 
-#: gift-cards-for-woocommerce.php:1064
+#: gift-cards-for-woocommerce.php:1180
 msgid "Gift Card Settings"
 msgstr "Réglages Carte cadeau"
 
-#: gift-cards-for-woocommerce.php:1070
+#: gift-cards-for-woocommerce.php:1186
 msgid "Consolidate Gift Cards"
 msgstr "Consolider les cartes-cadeaux"
 
-#: gift-cards-for-woocommerce.php:1072
+#: gift-cards-for-woocommerce.php:1188
 msgid ""
 "This will scan all gift cards without user IDs and attempt to associate them "
 "with registered users based on recipient email addresses."
@@ -304,269 +317,225 @@ msgstr ""
 "et d'essayer de les associer à des utilisateurs enregistrés sur la base de "
 "l'adresse électronique du destinataire."
 
-#: gift-cards-for-woocommerce.php:1082
+#: gift-cards-for-woocommerce.php:1198
 msgid "Default Validity Period (days)"
 msgstr "Période de validité par défaut (jours)"
 
-#: gift-cards-for-woocommerce.php:1088
+#: gift-cards-for-woocommerce.php:1204
 msgid "Number of days gift cards are valid for by default."
 msgstr ""
 "Nombre de jours pendant lesquels les cartes cadeaux sont valables par défaut."
 
-#: gift-cards-for-woocommerce.php:1094
+#: gift-cards-for-woocommerce.php:1210
 msgid "Display Delivery Date"
 msgstr "Afficher la date de livraison"
 
-#: gift-cards-for-woocommerce.php:1100
+#: gift-cards-for-woocommerce.php:1216
 msgid "Enable this option to display the delivery date for gift cards."
 msgstr ""
 "Activez cette option pour afficher la date de livraison des cartes cadeaux."
 
-#: gift-cards-for-woocommerce.php:1106
+#: gift-cards-for-woocommerce.php:1222
+msgid "Enable Activity Logging"
+msgstr "Activer l'enregistrement des activités"
+
+#: gift-cards-for-woocommerce.php:1228
+msgid "Log gift card activities for tracking and debugging purposes."
+msgstr ""
+"Enregistrer les activités liées aux cartes cadeaux à des fins de suivi et de "
+"débogage."
+
+#: gift-cards-for-woocommerce.php:1234
 msgid "Display Location"
 msgstr "Affiche l’emplacement"
 
-#: gift-cards-for-woocommerce.php:1117
+#: gift-cards-for-woocommerce.php:1245
 msgid "Choose where to display the gift card field on checkout."
 msgstr ""
 "Choisissez l'endroit où afficher le champ de la carte-cadeau lors du "
 "paiement."
 
-#: gift-cards-for-woocommerce.php:1221
+#: gift-cards-for-woocommerce.php:1349
 msgid "Gift card issued successfully!"
 msgstr "La carte cadeau a été émise avec succès !"
 
-#: gift-cards-for-woocommerce.php:1223
+#: gift-cards-for-woocommerce.php:1351
 msgid "Invalid input. Please make sure all required fields are filled out."
 msgstr ""
 "Entrée invalide. Veuillez vous assurer que tous les champs obligatoires sont "
 "remplis."
 
-#: gift-cards-for-woocommerce.php:1295
+#: gift-cards-for-woocommerce.php:1423
 msgid "Gift Card Discount"
 msgstr "Remise sur la carte cadeau"
 
-#: gift-cards-for-woocommerce.php:1329 classes/Gift_Cards_List_Table.php:30
-#: templates/emails/gift-card-email.php:10
+#: gift-cards-for-woocommerce.php:1459
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:29
+#: src/WooCommerce/PDF/GiftCardPDFGenerator.php:165
+#: templates/emails/gift-card-email.php:11
 msgid "Gift Card"
 msgstr "Carte cadeau"
 
-#: gift-cards-for-woocommerce.php:1330
+#: gift-cards-for-woocommerce.php:1460
 msgid "Enable this option to make this product a gift card."
 msgstr "Activez cette option pour faire de ce produit une carte cadeau."
 
-#: gift-cards-for-woocommerce.php:1336
+#: gift-cards-for-woocommerce.php:1466
 msgid "Product as Gift Card"
 msgstr "Produit en tant que carte-cadeau"
 
-#: gift-cards-for-woocommerce.php:1337
+#: gift-cards-for-woocommerce.php:1467
 msgid "Enable this option to allow this product to be sent as a gift card."
 msgstr ""
 "Activez cette option pour permettre l'envoi de ce produit sous forme de "
 "carte cadeau."
 
-#: gift-cards-for-woocommerce.php:1384
+#: gift-cards-for-woocommerce.php:1514
 msgid "Gift this product"
 msgstr "Offrir ce produit"
 
-#: gift-cards-for-woocommerce.php:1385
+#: gift-cards-for-woocommerce.php:1515
 msgid "Check this box to send this product as a gift card"
 msgstr "Cochez cette case pour envoyer ce produit sous forme de carte cadeau"
 
-#: gift-cards-for-woocommerce.php:1411
+#: gift-cards-for-woocommerce.php:1541
 msgid "To (Email)"
 msgstr "À (Email)"
 
-#: gift-cards-for-woocommerce.php:1417
+#: gift-cards-for-woocommerce.php:1547
 msgid "From (Name)"
 msgstr "De (Nom)"
 
-#: gift-cards-for-woocommerce.php:1554 gift-cards-for-woocommerce.php:1615
+#: gift-cards-for-woocommerce.php:1684 gift-cards-for-woocommerce.php:1745
 msgid "To"
 msgstr "Pour"
 
-#: gift-cards-for-woocommerce.php:1558 gift-cards-for-woocommerce.php:1618
+#: gift-cards-for-woocommerce.php:1688 gift-cards-for-woocommerce.php:1748
 msgid "From"
 msgstr "De"
 
-#: gift-cards-for-woocommerce.php:1609
+#: gift-cards-for-woocommerce.php:1739
 msgid "Type"
 msgstr "Type"
 
-#: gift-cards-for-woocommerce.php:1773
+#: gift-cards-for-woocommerce.php:1903
 msgid "Gift Card Amount"
 msgstr "Montant de la carte cadeau"
 
-#: gift-cards-for-woocommerce.php:1875
+#: gift-cards-for-woocommerce.php:2005
 msgid "You need to be logged in to view your gift cards."
 msgstr "Vous devez être connecté pour consulter vos cartes-cadeaux."
 
-#: gift-cards-for-woocommerce.php:1888
+#: gift-cards-for-woocommerce.php:2018
 msgid "You have no active gift cards."
 msgstr "Vous n'avez pas de cartes cadeaux actives."
 
-#: gift-cards-for-woocommerce.php:1899
+#: gift-cards-for-woocommerce.php:2029
 msgid "Your Gift Card Balance"
 msgstr "Le solde de votre carte-cadeau"
 
-#: gift-cards-for-woocommerce.php:1900
+#: gift-cards-for-woocommerce.php:2030
 #, php-format
 msgid "Total Balance: %s"
 msgstr "Solde total : %s"
 
-#: gift-cards-for-woocommerce.php:1903
+#: gift-cards-for-woocommerce.php:2033
 msgid "Active Gift Cards"
 msgstr "Cartes-cadeaux actives"
 
-#: gift-cards-for-woocommerce.php:1907 gift-cards-for-woocommerce.php:2114
-#: classes/Gift_Cards_List_Table.php:44
+#: gift-cards-for-woocommerce.php:2037 gift-cards-for-woocommerce.php:2242
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:43
 msgid "Balance"
 msgstr "Solde"
 
-#: gift-cards-for-woocommerce.php:1921
+#: gift-cards-for-woocommerce.php:2051
 msgid "No Expiration"
 msgstr "Pas d'expiration"
 
-#: gift-cards-for-woocommerce.php:1968
+#: gift-cards-for-woocommerce.php:2098
 msgid "Gift Card Balance:"
 msgstr "Solde de la carte cadeau :"
 
-#: gift-cards-for-woocommerce.php:1969
+#: gift-cards-for-woocommerce.php:2099
 #, php-format
 msgid "%s"
 msgstr "%s"
 
-#: gift-cards-for-woocommerce.php:1970
+#: gift-cards-for-woocommerce.php:2100
 msgid "Edit"
 msgstr "Editer"
 
-#: gift-cards-for-woocommerce.php:2085
+#: gift-cards-for-woocommerce.php:2213
 msgid "You do not have permission to export gift cards."
 msgstr "Vous n'avez pas l'autorisation d'exporter des cartes cadeaux."
 
-#: gift-cards-for-woocommerce.php:2089
+#: gift-cards-for-woocommerce.php:2217
 msgid "Invalid request."
 msgstr "Demande non valide."
 
-#: gift-cards-for-woocommerce.php:2112
+#: gift-cards-for-woocommerce.php:2240
 msgid "ID"
 msgstr "ID"
 
-#: gift-cards-for-woocommerce.php:2116
+#: gift-cards-for-woocommerce.php:2244
 msgid "Sender Email"
 msgstr "Email de l'expéditeur"
 
-#: gift-cards-for-woocommerce.php:2119 classes/Gift_Cards_List_Table.php:46
+#: gift-cards-for-woocommerce.php:2247
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:45
 msgid "Issued Date"
 msgstr "Date d'émission"
 
-#: gift-cards-for-woocommerce.php:2159
+#: gift-cards-for-woocommerce.php:2287
 msgid "You do not have permission to import gift cards."
 msgstr "Vous n'avez pas l'autorisation d'importer des cartes cadeaux."
 
-#: gift-cards-for-woocommerce.php:2292 gift-cards-for-woocommerce.php:2339
+#: gift-cards-for-woocommerce.php:2429 gift-cards-for-woocommerce.php:2476
 msgid "Gift card not found."
 msgstr "Carte cadeau introuvable."
 
-#: gift-cards-for-woocommerce.php:2329
+#: gift-cards-for-woocommerce.php:2466
 msgid "Balance cannot be negative."
 msgstr "Le solde ne peut être négatif."
 
-#: gift-cards-for-woocommerce.php:2389
+#: gift-cards-for-woocommerce.php:2526
 msgid "Gift card updated successfully."
 msgstr "La carte cadeau a été mise à jour avec succès."
 
-#: gift-cards-for-woocommerce.php:2392
+#: gift-cards-for-woocommerce.php:2529
 msgid "Failed to update gift card."
 msgstr "Échec de la mise à jour de la carte cadeau."
 
-#: gift-cards-for-woocommerce.php:2521
+#: gift-cards-for-woocommerce.php:2658
 msgid "File upload error."
 msgstr "Erreur de téléchargement de fichier."
 
-#: gift-cards-for-woocommerce.php:2526
+#: gift-cards-for-woocommerce.php:2663
 msgid "Cannot open uploaded file."
 msgstr "Impossible d'ouvrir le fichier téléchargé."
 
-#: classes/Gift_Cards_List_Table.php:48
-msgid "Actions"
-msgstr "Actions"
-
-#: classes/Gift_Cards_List_Table.php:201
-msgid "Filter by Type"
-msgstr "Filtrer par Type"
-
-#: classes/Gift_Cards_List_Table.php:203
-msgid "All Types"
-msgstr "Tous les types"
-
-#: classes/Gift_Cards_List_Table.php:208
-msgid "Filter"
-msgstr "Filtre"
-
-#: classes/WC_Gift_Card_Email.php:31
+#: src/WooCommerce/Emails/GiftCardEmail.php:39
 msgid "Gift Card Email"
 msgstr "Email de Carte Cadeau"
 
-#: classes/WC_Gift_Card_Email.php:32
+#: src/WooCommerce/Emails/GiftCardEmail.php:40
 msgid "This email is sent to the recipient when a gift card is issued."
 msgstr ""
 "Cet e-mail est envoyé au destinataire lorsqu'une carte cadeau est émise."
 
-#: classes/WC_Gift_Card_Email.php:33
+#: src/WooCommerce/Emails/GiftCardEmail.php:41
 msgid "You have received a gift card!"
 msgstr "Vous avez reçu une carte cadeau!"
 
-#: classes/WC_Gift_Card_Email.php:34
+#: src/WooCommerce/Emails/GiftCardEmail.php:42
 msgid "You have received a gift card from {sender_name}"
 msgstr "Vous avez reçu une carte cadeau de {sender_name}"
 
-#: classes/WC_Gift_Card_Email.php:59
-msgid "Enable/Disable"
-msgstr "Activer/Désactiver"
-
-#: classes/WC_Gift_Card_Email.php:61
-msgid "Enable this email notification"
-msgstr "Activer cette notification par courriel"
-
-#: classes/WC_Gift_Card_Email.php:65
-msgid "Subject"
-msgstr "Sujet"
-
-#: classes/WC_Gift_Card_Email.php:67 classes/WC_Gift_Card_Email.php:74
-#, php-format
-msgid "Available placeholders: %s"
-msgstr "Placements disponibles : %s"
-
-#: classes/WC_Gift_Card_Email.php:72
-msgid "Email Heading"
-msgstr "En-tête de l'e-mail"
-
-#: classes/WC_Gift_Card_Email.php:79
-msgid "Email type"
-msgstr "Type d'email"
-
-#: classes/WC_Gift_Card_Email.php:81
-msgid "Choose which format of email to send."
-msgstr "Choisissez le format de l'e-mail à envoyer."
-
-#: classes/WC_Gift_Card_Email.php:85
-msgid "Plain text"
-msgstr "Texte en clair"
-
-#: classes/WC_Gift_Card_Email.php:86
-msgid "HTML"
-msgstr "HTML"
-
-#: classes/WC_Gift_Card_Email.php:87
-msgid "Multipart"
-msgstr "Multiparties"
-
-#: classes/WC_Gift_Card_Expiry_Reminder_Email.php:28
+#: src/WooCommerce/Emails/GiftCardExpiryReminderEmail.php:28
 msgid "Gift Card Expiry Reminder Email"
 msgstr "Courriel de rappel de l'expiration de la carte-cadeau"
 
-#: classes/WC_Gift_Card_Expiry_Reminder_Email.php:29
+#: src/WooCommerce/Emails/GiftCardExpiryReminderEmail.php:29
 msgid ""
 "This email is sent to the recipient as a reminder before the gift card "
 "expires."
@@ -574,15 +543,43 @@ msgstr ""
 "Cet e-mail est envoyé au destinataire comme rappel avant l'expiration de la "
 "carte cadeau."
 
-#: classes/WC_Gift_Card_Expiry_Reminder_Email.php:30
+#: src/WooCommerce/Emails/GiftCardExpiryReminderEmail.php:30
 msgid "Your gift card is about to expire!"
 msgstr "Votre carte cadeau est sur le point d'expirer !"
 
-#: classes/WC_Gift_Card_Expiry_Reminder_Email.php:31
+#: src/WooCommerce/Emails/GiftCardExpiryReminderEmail.php:31
 msgid "Your gift card will expire soon"
 msgstr "Votre carte cadeau va bientôt expirer"
 
-#: templates/emails/gift-card-email.php:14
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:47
+msgid "Actions"
+msgstr "Actions"
+
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:200
+msgid "Filter by Type"
+msgstr "Filtrer par Type"
+
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:202
+msgid "All Types"
+msgstr "Tous les types"
+
+#: src/WooCommerce/ListTable/GiftCardsListTable.php:207
+msgid "Filter"
+msgstr "Filtre"
+
+#: src/WooCommerce/PDF/GiftCardPDFGenerator.php:183
+msgid "From:"
+msgstr "De :"
+
+#: src/WooCommerce/PDF/GiftCardPDFGenerator.php:184
+msgid "To:"
+msgstr "Pour :"
+
+#: src/WooCommerce/PDF/GiftCardPDFGenerator.php:185
+msgid "Date:"
+msgstr "Date :"
+
+#: templates/emails/gift-card-email.php:15
 #: templates/emails/plain/gift-card-email.php:12
 #, php-format
 msgid "Hello! You've received a gift card worth %s from %s."
@@ -590,23 +587,23 @@ msgstr ""
 "Bonjour ! Vous avez reçu une carte cadeau d'une valeur de %s de la part de "
 "%s."
 
-#: templates/emails/gift-card-email.php:17
+#: templates/emails/gift-card-email.php:18
 #: templates/emails/plain/gift-card-email.php:16
 #, php-format
 msgid "Message: %s"
 msgstr "Message : %s"
 
-#: templates/emails/gift-card-email.php:25
+#: templates/emails/gift-card-email.php:26
 #, php-format
 msgid "Redeem your gift card with code: <strong>%s</strong>"
 msgstr "Échangez votre carte-cadeau avec le code : <strong>%s</strong>"
 
-#: templates/emails/gift-card-email.php:35
+#: templates/emails/gift-card-email.php:36
 #, php-format
 msgid "This gift card will expire on: <strong>%s</strong>"
 msgstr "Cette carte cadeau expirera le : <strong>%s</strong>"
 
-#: templates/emails/gift-card-expiry-reminder-email.php:27
+#: templates/emails/gift-card-expiry-reminder-email.php:14
 #, php-format
 msgid ""
 "Hello! Your gift card with code <strong>%s</strong> will expire in %d days "
@@ -615,12 +612,12 @@ msgstr ""
 "Bonjour ! Votre carte cadeau avec le code<strong>%s</strong>expirera dans %d "
 "jours le <strong>%s</strong>."
 
-#: templates/emails/gift-card-expiry-reminder-email.php:33
+#: templates/emails/gift-card-expiry-reminder-email.php:20
 #, php-format
 msgid "Current Balance: <strong>%s</strong>"
 msgstr "Solde actuel : <strong>%s</strong>"
 
-#: templates/emails/gift-card-expiry-reminder-email.php:36
+#: templates/emails/gift-card-expiry-reminder-email.php:23
 #: templates/emails/plain/gift-card-expiry-reminder-email.php:27
 msgid ""
 "Don't let this balance go to waste! Use your gift card before it expires."
@@ -628,11 +625,11 @@ msgstr ""
 "Ne laissez pas ce solde se perdre ! Utilisez votre carte-cadeau avant "
 "qu'elle n'expire."
 
-#: templates/emails/gift-card-expiry-reminder-email.php:40
+#: templates/emails/gift-card-expiry-reminder-email.php:27
 msgid "Shop Now"
 msgstr "Boutique en ligne"
 
-#: templates/emails/gift-card-expiry-reminder-email.php:45
+#: templates/emails/gift-card-expiry-reminder-email.php:32
 #: templates/emails/plain/gift-card-expiry-reminder-email.php:35
 msgid "This is an automated reminder. Please do not reply to this email."
 msgstr "Il s'agit d'un rappel automatique. Ne répondez pas à cet e-mail."
@@ -661,6 +658,37 @@ msgstr "Solde actuel : %s"
 #: templates/emails/plain/gift-card-expiry-reminder-email.php:30
 msgid "Visit our shop: "
 msgstr "Visitez notre boutique : "
+
+#~ msgid "Enable/Disable"
+#~ msgstr "Activer/Désactiver"
+
+#~ msgid "Enable this email notification"
+#~ msgstr "Activer cette notification par courriel"
+
+#~ msgid "Subject"
+#~ msgstr "Sujet"
+
+#, php-format
+#~ msgid "Available placeholders: %s"
+#~ msgstr "Placements disponibles : %s"
+
+#~ msgid "Email Heading"
+#~ msgstr "En-tête de l'e-mail"
+
+#~ msgid "Email type"
+#~ msgstr "Type d'email"
+
+#~ msgid "Choose which format of email to send."
+#~ msgstr "Choisissez le format de l'e-mail à envoyer."
+
+#~ msgid "Plain text"
+#~ msgstr "Texte en clair"
+
+#~ msgid "HTML"
+#~ msgstr "HTML"
+
+#~ msgid "Multipart"
+#~ msgstr "Multiparties"
 
 #~ msgid "Yes"
 #~ msgstr "Oui"
