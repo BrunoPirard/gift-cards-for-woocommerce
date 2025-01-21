@@ -1,5 +1,4 @@
 <?php
-
 namespace GiftCards\WooCommerce\PDF;
 
 if (!defined('ABSPATH')) {
@@ -8,26 +7,8 @@ if (!defined('ABSPATH')) {
 
 use TCPDF;
 
-/*// Vérifier si TCPDF est déjà chargé
-if (!class_exists('TCPDF')) {
-    // Essayer d'abord l'autoloader de Composer
-    $autoload_path = $plugin_root . '/vendor/autoload.php';
-    
-    if (file_exists($autoload_path)) {
-        require_once $autoload_path;
-    } else {
-        error_log('Autoloader not found at: ' . $autoload_path);
-        throw new \Exception('Composer autoloader not found. Please run composer install.');
-    }
-}
-
-// Vérifier que TCPDF est bien chargé
-if (!class_exists('TCPDF')) {
-    error_log('TCPDF class not found after loading autoloader');
-    throw new \Exception('TCPDF class not available');
-}*/
-
 class GiftCardPDFGenerator {
+
     private $gift_card;
     
     public function __construct($gift_card) {
@@ -43,14 +24,14 @@ class GiftCardPDFGenerator {
      * @throws \Exception Si une erreur survient pendant la génération du PDF.
      */
     public function generate() {
-    error_log('Début de la génération du PDF');
+    //error_log('Début de la génération du PDF');
     try {
         if (!class_exists('TCPDF')) {
-            error_log('La classe TCPDF n\'est pas disponible');
+            //error_log('La classe TCPDF n\'est pas disponible');
             throw new \Exception('TCPDF class not available');
         }
 
-        error_log('Création d\'une nouvelle instance de TCPDF');
+        //error_log('Création d\'une nouvelle instance de TCPDF');
         $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             
             // Définir les informations du document
@@ -81,7 +62,7 @@ class GiftCardPDFGenerator {
         // Générer le PDF
         return $pdf->Output('gift-card-' . $this->gift_card->code . '.pdf', 'S');
     } catch (\Exception $e) {
-            error_log('PDF Generation Error: ' . $e->getMessage());
+            //error_log('PDF Generation Error: ' . $e->getMessage());
             throw $e;
         }
     }

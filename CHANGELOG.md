@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.0.3
+
+NEW: Add PDF attached to the Gift Card
+IMPROVE: PSR4 Classes
+
 ## 1.0.2
 
 NEW: Add "Display Delivery Date" user choice

@@ -8,7 +8,6 @@
  * @subpackage Admin
  * @since      1.0.0
  */
-
 namespace GiftCards\WooCommerce\ListTable;
 
 if ( ! class_exists( 'WP_List_Table' ) ) {

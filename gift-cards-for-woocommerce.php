@@ -11,20 +11,21 @@
  * Plugin Name: Gift Cards for WooCommerce®
  * Description: Adds gift card functionality to your WooCommerce® store.
  * Plugin URI:  https://github.com/robertdevore/gift-cards-for-woocommerce/
- * Version:     1.0.2
+ * Version:     1.0.3
  * Author:      Robert DeVore
  * Author URI:  https://robertdevore.com/
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: gift-cards-for-woocommerce
  * Domain Path: /languages
+ * WC tested up to: 9.4.0
+ * Requires Plugins: woocommerce
  * Update URI:  https://github.com/robertdevore/gift-cards-for-woocommerce/
  */
 
 if (!class_exists('TCPDF')) {
     require_once plugin_dir_path(__FILE__) . 'vendor/tecnickcom/tcpdf/tcpdf.php';
 }
-
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
@@ -56,7 +57,7 @@ class_alias('GiftCards\WooCommerce\PDF\GiftCardPDFGenerator', 'Gift_Card_PDF_Gen
 /**
  * Current plugin version.
  */
-define( 'GIFT_CARDS_FOR_WOOCOMMERCE_VERSION', '1.0.2' );
+define( 'GIFT_CARDS_FOR_WOOCOMMERCE_VERSION', '1.0.3' );
 
 /**
  * Displays an admin notice if WooCommerce is inactive.
@@ -74,8 +75,6 @@ function wc_gift_cards_woocommerce_inactive_notice() {
 
 // Run plugin_activated from WC_Gift_Cards.
 register_activation_hook( __FILE__, [ 'WC_Gift_Cards', 'plugin_activated' ] );
-
-
 register_activation_hook(__FILE__, 'activate_gift_card_cron');
 
 function activate_gift_card_cron() {
@@ -83,7 +82,6 @@ function activate_gift_card_cron() {
         wp_schedule_event(time(), 'hourly', 'send_gift_card_email_with_pdf');
     }
 }
-
 
 /**
  * Main class for managing gift card functionality in WooCommerce.
@@ -210,7 +208,6 @@ class WC_Gift_Cards {
         $display_hook = get_option(self::OPTION_DISPLAY_HOOK, 'woocommerce_review_order_before_payment');  
         // Add the block to the chosen hook
         add_action($display_hook, [$this, 'display_gift_card_checkbox']);
-
         // Gérer le changement de statut de la journalisation
         add_action('admin_init', [$this, 'handle_logging_status_change']);
 
@@ -594,14 +591,12 @@ class WC_Gift_Cards {
                     ]
                 );
 
-
                 /*error_log(sprintf(
                     'Gift Card Creation - Delivery: %s, Validity: %d days, Expiration: %s',
                     $delivery_date,
                     $validity_days,
                     $expiration_date
                 ));*/
-
 
                 // Prepare gift card object for email.
                 $gift_card = (object) [
@@ -2358,7 +2353,6 @@ class WC_Gift_Cards {
         return $email_classes;
     }
 
-
     /**
      * Retrieves gift card data via AJAX.
      *
@@ -2780,7 +2774,6 @@ class WC_Gift_Cards {
             return $results;
         }
     }
-
 }
 
 new WC_Gift_Cards();

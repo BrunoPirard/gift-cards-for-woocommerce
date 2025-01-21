@@ -1,5 +1,4 @@
 <?php
-
 namespace GiftCards\WooCommerce\Logger;
 
 if (!defined('ABSPATH')) {
@@ -10,7 +9,6 @@ if (!defined('ABSPATH')) {
  * Gift Cards Logger Class
  */
 class GiftCardsLogger {
-
     /**
      * Table name for activity logs
      *
