@@ -1,3 +1,4 @@
+# VS Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -5,10 +6,61 @@
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 
-# Local History for Visual Studio Code
+# VS Code History
 .history/
 
-# Built Visual Studio Code Extensions
+# VS Code Extensions
 *.vsix
 
+# Composer
 /vendor
+composer.phar
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# WordPress specific
+wp-config.php
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/backup-db/
+wp-content/cache/
+wp-content/backups/
+
+# WordPress debugging
+debug.log
+
+# Build files
+/dist
+/build
+.sass-cache
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Operating System
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.phpintel
+*.php_cs.cache
+
+# Test coverage
+coverage/
+.phpunit.result.cache
+
+# Temporary files
+*.tmp
+*.bak
+*.log
