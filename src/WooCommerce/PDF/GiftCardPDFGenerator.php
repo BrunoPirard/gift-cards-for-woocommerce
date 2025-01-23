@@ -16,12 +16,18 @@ class GiftCardPDFGenerator {
         $this->gift_card = $gift_card;
     }
     
+  
     /**
-     * Génère le PDF de la carte-cadeau.
+     * Generates a PDF for the gift card using TCPDF.
      *
-     * @return string Le PDF généré.
+     * This function creates a new PDF document, sets its properties,
+     * adds a page, inserts the store logo if available, and writes the
+     * gift card content in HTML format. The generated PDF is returned
+     * as a string. If the TCPDF class is not available or if an error
+     * occurs during PDF generation, an exception is thrown.
      *
-     * @throws \Exception Si une erreur survient pendant la génération du PDF.
+     * @return string The generated PDF as a string.
+     * @throws \Exception If the TCPDF class is not available or PDF generation fails.
      */
     public function generate() {
     //error_log('Début de la génération du PDF');
