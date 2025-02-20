@@ -1,4 +1,7 @@
 /* Base styles for the form */
+.gift-card-fields {
+    margin-bottom: 25px;
+}
 .wc_gift_card_form .form-field {
     margin-bottom: 20px;
     clear: both;
